@@ -1,324 +1,860 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mover Express - Roteirizador Real por KM (OSM)</title>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; color: #333; padding: 15px; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #1e3a8a; margin-bottom: 5px; font-size: 24px; }
-        .subtitle { text-align: center; color: #16a34a; font-size: 13px; margin-bottom: 20px; font-weight: bold; text-transform: uppercase; }
-        h2 { font-size: 18px; margin-bottom: 10px; color: #475569; }
-        
-        .input-group { display: flex; gap: 8px; margin-bottom: 12px; }
-        input[type="text"] { flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; }
-        
-        .btn { display: block; width: 100%; padding: 14px; margin: 8px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; text-decoration: none; transition: background 0.2s; }
-        .btn-inline { width: auto; margin: 0; padding: 12px 20px; }
-        .btn-primary { background-color: #2563eb; color: white; }
-        .btn-primary:hover { background-color: #1d4ed8; }
-        .btn-success { background-color: #16a34a; color: white; }
-        .btn-success:hover { background-color: #15803d; }
-        .btn-secondary { background-color: #475569; color: white; }
-        .btn-danger { background-color: #dc2626; color: white; }
-        .btn-maps-sm { background-color: #16a34a; color: white; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: bold; text-decoration: none; border: none; cursor: pointer; white-space: nowrap; }
-        
-        #reader { width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px; display: none; }
-        
-        .card-status { background: #f0fdf4; border-left: 5px solid #16a34a; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
-        .lista-rotas { list-style: none; margin-top: 15px; }
-        .lista-rotas li { padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-        .lista-rotas li.concluido { text-decoration: line-through; color: #94a3b8; background: #f1f5f9; }
-        .lista-rotas li.atual { border: 2px solid #16a34a; background-color: #f7fee7; font-weight: bold; }
-        
-        .item-esquerda { display: flex; flex-direction: column; gap: 4px; }
-        .item-direita { display: flex; align-items: center; gap: 8px; }
-        
-        .badge { font-size: 11px; padding: 4px 8px; border-radius: 12px; font-weight: bold; white-space: nowrap; }
-        .badge-espera { background: #fef3c7; color: #d97706; }
-        .badge-ok { background: #e2e8f0; color: #64748b; }
-        .distancia-info { font-size: 12px; color: #2563eb; font-weight: bold; }
-    </style>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Mover Express Pro</title>
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI,sans-serif;
+}
+
+body{
+background:#f4f6f9;
+}
+
+.container{
+max-width:1200px;
+margin:auto;
+padding:15px;
+}
+
+.header{
+background:#1e40af;
+color:white;
+padding:15px;
+border-radius:10px;
+margin-bottom:15px;
+}
+
+.header h1{
+font-size:26px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:350px 1fr;
+gap:15px;
+}
+
+@media(max-width:900px){
+.grid{
+grid-template-columns:1fr;
+}
+}
+
+.card{
+background:white;
+padding:15px;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,.1);
+margin-bottom:15px;
+}
+
+input,
+button,
+select{
+width:100%;
+padding:12px;
+margin-top:8px;
+border-radius:8px;
+border:1px solid #ddd;
+}
+
+button{
+cursor:pointer;
+border:none;
+font-weight:bold;
+}
+
+.btn-primary{
+background:#2563eb;
+color:white;
+}
+
+.btn-success{
+background:#16a34a;
+color:white;
+}
+
+.btn-danger{
+background:#dc2626;
+color:white;
+}
+
+.btn-dark{
+background:#334155;
+color:white;
+}
+
+#map{
+height:600px;
+border-radius:10px;
+}
+
+.lista{
+list-style:none;
+}
+
+.lista li{
+padding:10px;
+margin-bottom:6px;
+background:#f8fafc;
+border-radius:8px;
+border:1px solid #e2e8f0;
+}
+
+.badge{
+padding:4px 8px;
+border-radius:20px;
+font-size:12px;
+font-weight:bold;
+}
+
+.pendente{
+background:#fef3c7;
+}
+
+.entregue{
+background:#dcfce7;
+}
+
+.atual{
+background:#bfdbfe;
+}
+
+.status{
+font-size:14px;
+margin-top:8px;
+color:#64748b;
+}
+
+#reader{
+display:none;
+margin-top:10px;
+}
+
+.relatorio{
+background:#f0fdf4;
+padding:10px;
+border-radius:8px;
+margin-top:10px;
+}
+
+</style>
+
 </head>
+
 <body>
 
 <div class="container">
-    <h1>Mover Express</h1>
-    <div class="subtitle">Otimização Real: Menor KM de Rua via OpenStreetMap</div>
-    
-    <div id="area-cadastro">
-        <h2>Adicionar Destinos</h2>
-        <div class="input-group">
-            <input type="text" id="input-endereco" placeholder="Digite endereço, número e cidade...">
-            <button class="btn btn-primary btn-inline" onclick="adicionarManual()">+ Add</button>
-        </div>
-        <button class="btn btn-secondary" onclick="alternarCamera()">📷 Escanear Endereço por QR Code</button>
-        <div id="reader"></div>
-    </div>
 
-    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #e2e8f0;">
-
-    <div id="bloco-inicial">
-        <button class="btn btn-success" onclick="solicitarMatrizOSRM()">Calcular e Ordenar por Menor KM Real</button>
-    </div>
-
-    <div id="painel-rota" style="display: none;">
-        <div class="card-status">
-            <h2>Próxima Parada Otimizada:</h2>
-            <p id="nome-destino" style="font-size: 16px; font-weight: bold; color: #1e293b;"></p>
-            <p id="km-destino" style="font-size: 14px; color: #2563eb; margin-top: 5px; font-weight: bold;"></p>
-        </div>
-        <button class="btn btn-primary" onclick="confirmarChegada()">Concluir e Excluir Parada Atual</button>
-    </div>
-
-    <div id="painel-concluido" style="display: none; text-align: center; padding: 20px; background: #dcfce7; border-radius: 8px;">
-        <h2 style="color: #16a34a;">🎉 Circuito Finalizado!</h2>
-        <p id="total-km-percorrido" style="margin: 10px 0; font-weight: bold; color: #475569;"></p>
-        <button class="btn btn-danger" onclick="reiniciarSistema()">Zerar Tudo</button>
-    </div>
-
-    <h3 style="margin-top: 25px; font-size: 16px; color: #64748b;">Sequência Roteirizada (Mais Próxima Primeiro)</h3>
-    <ul id="lista-clientes" class="lista-rotas"></ul>
+<div class="header">
+<h1>🚚 Mover Express Pro</h1>
+<p>Roteirização Inteligente por Menor KM Real</p>
 </div>
 
-<script>
-// Ponto zero fixo da sua localização inicial (Exemplo: Centro)
-let PONTOS_ENTREGA = [
-    { nome: "Sua Localização Inicial", lat: -21.7642, lng: -43.3503 }
-];
+<div class="grid">
+
+<div>
+
+<div class="card">
+
+<h3>Localização Atual</h3>
+
+<button
+class="btn-primary"
+onclick="obterGPS()">
+📍 Capturar GPS
+</button>
+
+<p id="gpsStatus"
+class="status">
+GPS não capturado
+</p>
+
+</div>
+
+<div class="card">
+
+<h3>Adicionar Entrega</h3>
+
+<input
+id="endereco"
+placeholder="Rua, Número, Cidade">
+
+<button
+class="btn-success"
+onclick="adicionarEndereco()">
+➕ Adicionar
+</button>
+
+</div>
+
+<div class="card">
+
+<h3>Importar CSV</h3>
+
+<input
+type="file"
+id="csvFile"
+accept=".csv">
+
+<button
+class="btn-dark"
+onclick="importarCSV()">
+📄 Importar
+</button>
+
+</div>
+
+<div class="card">
+
+<h3>Scanner QRCode</h3>
+
+<button
+class="btn-primary"
+onclick="abrirScanner()">
+📷 Abrir Scanner
+</button>
+
+<div id="reader"></div>
+
+</div>
+
+<div class="card">
+
+<h3>Otimização</h3>
+
+<button
+class="btn-success"
+onclick="calcularRota()">
+🚀 Calcular Melhor Rota
+</button>
+
+</div>
+
+<div class="card">
+
+<h3>Próxima Entrega</h3>
+
+<div id="proximaEntrega">
+Nenhuma rota calculada
+</div>
+
+<button
+class="btn-primary"
+onclick="concluirEntrega()">
+✅ Concluir Entrega
+</button>
+
+</div>
+
+<div class="card">
+
+<h3>Lista de Entregas</h3>
+
+<ul id="listaEntregas"
+class="lista"></ul>
+
+</div>
+
+<div class="card">
+
+<h3>Relatório</h3>
+
+<div
+id="relatorio"
+class="relatorio">
+
+Total KM: 0
+
+</div>
+
+</div>
+
+</div>
+
+<div>
+
+<div id="map"></div>
+
+</div>
+
+</div>
+
+</div>
+  <script>
+
+let mapa;
+let marcadorGPS;
+
+let localizacaoAtual = null;
+
+let pontosEntrega = [];
 
 let rotaOtimizada = [];
-let proximasDistancias = []; 
+
 let indiceAtual = 0;
-let html5QrcodeScanner = null;
 
-async function buscarCoordenadas(endereco) {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}&limit=1`;
-    try {
-        const resposta = await fetch(url, { headers: { 'User-Agent': 'MoverExpressRoteirizador' } });
-        const dados = await resposta.json();
-        if (dados && dados.length > 0) {
-            return { nome: endereco, lat: parseFloat(dados[0].lat), lng: parseFloat(dados[0].lon) };
-        }
-        return null;
-    } catch (e) {
-        return null;
+let scanner = null;
+
+mapa = L.map('map').setView([-21.7642,-43.3503],13);
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
+attribution:'© OpenStreetMap'
+}
+).addTo(mapa);
+
+const grupoMarcadores = L.layerGroup().addTo(mapa);
+
+function obterGPS(){
+
+if(!navigator.geolocation){
+
+alert("GPS não suportado");
+
+return;
+
+}
+
+navigator.geolocation.getCurrentPosition(
+
+(pos)=>{
+
+const lat = pos.coords.latitude;
+const lng = pos.coords.longitude;
+
+localizacaoAtual = {
+nome:"Minha Localização",
+lat,
+lng
+};
+
+document.getElementById("gpsStatus").innerHTML =
+`GPS Capturado<br>
+Lat: ${lat.toFixed(6)}<br>
+Lng: ${lng.toFixed(6)}`;
+
+if(marcadorGPS){
+
+mapa.removeLayer(marcadorGPS);
+
+}
+
+marcadorGPS = L.marker([lat,lng])
+.addTo(mapa)
+.bindPopup("Você está aqui");
+
+mapa.setView([lat,lng],15);
+
+},
+
+(err)=>{
+
+alert("Não foi possível obter localização.");
+
+}
+
+);
+
+}
+
+async function buscarCoordenadas(endereco){
+
+try{
+
+const url =
+`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}&limit=1`;
+
+const resposta = await fetch(url);
+
+const dados = await resposta.json();
+
+if(dados.length===0){
+
+return null;
+
+}
+
+return{
+
+nome:endereco,
+
+lat:parseFloat(dados[0].lat),
+
+lng:parseFloat(dados[0].lon)
+
+};
+
+}
+catch(e){
+
+console.log(e);
+
+return null;
+
+}
+
+}
+
+async function adicionarEndereco(){
+
+const campo =
+document.getElementById("endereco");
+
+const endereco =
+campo.value.trim();
+
+if(!endereco){
+
+alert("Digite um endereço.");
+
+return;
+
+}
+
+campo.disabled = true;
+
+campo.value = "Localizando...";
+
+const ponto =
+await buscarCoordenadas(endereco);
+
+campo.disabled = false;
+
+campo.value = "";
+
+if(!ponto){
+
+alert("Endereço não encontrado.");
+
+return;
+
+}
+
+pontosEntrega.push(ponto);
+
+const marcador = L.marker([
+ponto.lat,
+ponto.lng
+]);
+
+marcador
+.bindPopup(ponto.nome)
+.addTo(grupoMarcadores);
+
+renderizarLista();
+
+ajustarMapa();
+
+}
+
+function ajustarMapa(){
+
+const bounds = [];
+
+if(localizacaoAtual){
+
+bounds.push([
+localizacaoAtual.lat,
+localizacaoAtual.lng
+]);
+
+}
+
+pontosEntrega.forEach(p=>{
+
+bounds.push([
+p.lat,
+p.lng
+]);
+
+});
+
+if(bounds.length>0){
+
+mapa.fitBounds(bounds,{
+padding:[50,50]
+});
+
+}
+
+}
+
+function renderizarLista(){
+
+const lista =
+document.getElementById(
+"listaEntregas"
+);
+
+lista.innerHTML = "";
+
+pontosEntrega.forEach((item,index)=>{
+
+lista.innerHTML += `
+<li>
+📦 ${item.nome}
+</li>
+`;
+
+});
+
+}
+
+function abrirScanner(){
+
+const reader =
+document.getElementById("reader");
+
+reader.style.display="block";
+
+if(scanner){
+
+return;
+
+}
+
+scanner = new Html5QrcodeScanner(
+"reader",
+{
+fps:10,
+qrbox:250
+}
+);
+
+scanner.render(
+
+async(texto)=>{
+
+scanner.clear();
+
+reader.style.display="none";
+
+const ponto =
+await buscarCoordenadas(texto);
+
+if(!ponto){
+
+alert(
+"QR não contém endereço válido."
+);
+
+return;
+
+}
+
+pontosEntrega.push(ponto);
+
+L.marker([
+ponto.lat,
+ponto.lng
+])
+.bindPopup(ponto.nome)
+.addTo(grupoMarcadores);
+
+renderizarLista();
+
+ajustarMapa();
+
+},
+
+(error)=>{}
+
+);
+
+}
+
+function abrirGoogleMaps(lat,lng){
+
+window.open(
+`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+'_blank'
+);
+
+}
+
+function abrirWaze(lat,lng){
+
+window.open(
+`https://waze.com/ul?ll=${lat},${lng}&navigate=yes`,
+'_blank'
+);
+
+}
+
+</script>
+  <script>
+
+let linhaRota = null;
+let kmTotal = 0;
+
+async function calcularRota(){
+
+    if(!localizacaoAtual){
+        alert("Capture o GPS primeiro.");
+        return;
     }
-}
 
-async function adicionarManual() {
-    const input = document.getElementById("input-endereco");
-    const enderecoText = input.value.trim();
-    if (!enderecoText) return alert("Insira o endereço.");
-    
-    input.value = "Obtendo Lat/Lng...";
-    input.disabled = true;
-
-    const ponto = await buscarCoordenadas(enderecoText);
-    if (ponto) {
-        PONTOS_ENTREGA.push(ponto);
-        renderizarListaInicial();
-        input.value = "";
-    } else {
-        alert("Endereço não localizado.");
-        input.value = enderecoText;
+    if(pontosEntrega.length < 1){
+        alert("Adicione pelo menos uma entrega.");
+        return;
     }
-    input.disabled = false;
-}
 
-function alternarCamera() {
-    const readerDiv = document.getElementById("reader");
-    if (readerDiv.style.display === "block") {
-        fecharCamera();
-    } else {
-        readerDiv.style.display = "block";
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-    }
-}
+    try{
 
-async function onScanSuccess(decodedText) {
-    fecharCamera();
-    const ponto = await buscarCoordenadas(decodedText);
-    if (ponto) {
-        PONTOS_ENTREGA.push(ponto);
-        renderizarListaInicial();
-    }
-}
+        const todosPontos = [
+            localizacaoAtual,
+            ...pontosEntrega
+        ];
 
-function onScanFailure() {}
+        const coordenadas = todosPontos
+            .map(p => `${p.lng},${p.lat}`)
+            .join(";");
 
-function fecharCamera() {
-    if (html5QrcodeScanner) {
-        html5QrcodeScanner.clear().catch(err => console.error(err));
-    }
-    document.getElementById("reader").style.display = "none";
-}
+        const url =
+        `https://router.project-osrm.org/trip/v1/driving/${coordenadas}?source=first&roundtrip=false&overview=full&geometries=geojson&steps=false`;
 
-function renderizarListaInicial() {
-    const listaUL = document.getElementById("lista-clientes");
-    listaUL.innerHTML = "";
-    PONTOS_ENTREGA.forEach((ponto, idx) => {
-        listaUL.innerHTML += `
-            <li>
-                <div class="item-esquerda">
-                    <span>${idx === 0 ? "🏠" : "📦"} ${ponto.nome}</span>
-                </div>
-                <div class="item-direita">
-                    <span class="badge badge-espera">${idx === 0 ? 'Base' : 'Pendente'}</span>
-                </div>
-            </li>
-        `;
-    });
-}
-
-// BUSCA A MATRIZ REAL DE DISTÂNCIAS POR RUA VIA API OPENSTREETMAP (OSRM)
-async function solicitarMatrizOSRM() {
-    if (PONTOS_ENTREGA.length < 2) return alert("Adicione pontos para calcular.");
-
-    const btnCalcular = document.querySelector("#bloco-inicial button");
-    btnCalcular.innerText = "Consultando OpenStreetMap...";
-    btnCalcular.disabled = true;
-
-    const coordenadas = PONTOS_ENTREGA.map(p => `${p.lng},${p.lat}`).join(';');
-    //annotations=distance garante o cálculo em metros reais trafegáveis
-    const url = `https://router.project-osrm.org/table/v1/driving/${coordenadas}?annotations=distance`;
-
-    try {
         const resposta = await fetch(url);
         const dados = await resposta.json();
-        
-        if (dados.code === "Ok") {
-            processarRoteirizacaoReal(dados.distances);
-        } else {
-            alert("Erro na API do OpenStreetMap. Verifique os endereços.");
-            btnCalcular.innerText = "Calcular Menor Rota por Coordenadas";
-            btnCalcular.disabled = false;
+
+        if(dados.code !== "Ok"){
+            throw new Error("Erro OSRM");
         }
-    } catch (erro) {
-        alert("Erro de conexão com o servidor de rotas.");
-        btnCalcular.innerText = "Calcular Menor Rota por Coordenadas";
-        btnCalcular.disabled = false;
+
+        rotaOtimizada = [];
+
+        dados.waypoints
+        .sort(
+            (a,b)=>
+            a.waypoint_index-b.waypoint_index
+        )
+        .forEach(wp=>{
+
+            rotaOtimizada.push(
+                todosPontos[wp.trips_index]
+            );
+
+        });
+
+        kmTotal =
+        dados.trips[0].distance / 1000;
+
+        desenharRota(
+            dados.trips[0].geometry
+        );
+
+        indiceAtual = 1;
+
+        atualizarProximaEntrega();
+
+        document.getElementById(
+        "relatorio"
+        ).innerHTML =
+        `
+        Total KM: ${kmTotal.toFixed(2)}
+        <br>
+        Entregas: ${pontosEntrega.length}
+        `;
+
+        renderizarListaOtimizada();
+
     }
+    catch(e){
+
+        console.log(e);
+
+        alert(
+        "Erro ao otimizar rota."
+        );
+
+    }
+
 }
 
-// REALIZA O CÁLCULO E ORDENAÇÃO BASEADO NO MENOR DESLOCAMENTO EM KM DE ASFLATO
-function processarRoteirizacaoReal(matrizDistancias) {
-    let visitados = new Array(PONTOS_ENTREGA.length).fill(false);
-    rotaOtimizada = [];
-    proximasDistancias = [0];
+function desenharRota(geojson){
 
-    // Ponto de partida inicial é obrigatoriamente a sua localização (Índice 0)
-    let atual = 0; 
-    rotaOtimizada.push(PONTOS_ENTREGA[atual]);
-    visitados[atual] = true;
+    if(linhaRota){
 
-    // Constrói a sequência estritamente com base na menor distância de rua disponível
-    for (let i = 1; i < PONTOS_ENTREGA.length; i++) {
-        let proximoNo = -1;
-        let menorMetros = Infinity;
+        mapa.removeLayer(linhaRota);
 
-        for (let j = 0; j < PONTOS_ENTREGA.length; j++) {
-            if (!visitados[j]) {
-                let dMetros = matrizDistancias[atual][j];
-                if (dMetros < menorMetros) {
-                    menorMetros = dMetros;
-                    proximoNo = j;
-                }
+    }
+
+    linhaRota = L.geoJSON(
+        geojson,
+        {
+            style:{
+                color:"#2563eb",
+                weight:5
             }
         }
+    ).addTo(mapa);
 
-        if (proximoNo !== -1) {
-            rotaOtimizada.push(PONTOS_ENTREGA[proximoNo]);
-            // Converte os metros retornados pelo OpenStreetMap para Quilômetros
-            let dFinalKM = matrizDistancias[atual][proximoNo] / 1000;
-            proximasDistancias.push(parseFloat(dFinalKM.toFixed(2)));
-            
-            visitados[proximoNo] = true;
-            atual = proximoNo; // O destino mais próximo vira a nova origem para a próxima busca
-        }
-    }
+    mapa.fitBounds(
+        linhaRota.getBounds()
+    );
 
-    indiceAtual = 1;
-    document.getElementById("area-cadastro").style.display = "none";
-    document.getElementById("bloco-inicial").style.display = "none";
-    document.getElementById("painel-rota").style.display = "block";
-    atualizarInterface();
 }
 
-function atualizarInterface() {
-    const listaUL = document.getElementById("lista-clientes");
-    listaUL.innerHTML = "";
+function renderizarListaOtimizada(){
 
-    if (indiceAtual >= rotaOtimizada.length) {
-        document.getElementById("painel-rota").style.display = "none";
-        document.getElementById("painel-concluido").style.display = "block";
-        let totalKM = proximasDistancias.reduce((a, b) => a + b, 0).toFixed(2);
-        document.getElementById("total-km-percorrido").innerText = `Total real percorrido no circuito: ${totalKM} km`;
-        return;
-    } else {
-        document.getElementById("nome-destino").innerText = rotaOtimizada[indiceAtual].nome;
-        document.getElementById("km-destino").innerText = `Distância por rua nesta etapa: ~ ${proximasDistancias[indiceAtual]} km`;
-    }
+    const lista =
+    document.getElementById(
+    "listaEntregas"
+    );
 
-    rotaOtimizada.forEach((ponto, idx) => {
+    lista.innerHTML="";
+
+    rotaOtimizada.forEach(
+    (ponto,index)=>{
+
         let classe = "";
-        let botoesDireita = '<span class="badge badge-espera">Na Fila</span>';
-        let txtDistancia = idx > 0 ? `<span class="distancia-info">+${proximasDistancias[idx]} km</span>` : '';
 
-        if (idx < indiceAtual) {
-            classe = "concluido";
-            botoesDireita = '<span class="badge badge-ok">✓ Entregue</span>';
-        } else if (idx === indiceAtual) {
+        if(index < indiceAtual){
+
+            classe = "entregue";
+
+        }
+        else if(index === indiceAtual){
+
             classe = "atual";
-            botoesDireita = `<button class="btn-maps-sm" onclick="abrirGoogleMaps(${ponto.lat}, ${ponto.lng})">🧭 Navegar</button>`;
+
+        }
+        else{
+
+            classe = "pendente";
+
         }
 
-        listaUL.innerHTML += `
-            <li class="${classe}">
-                <div class="item-esquerda">
-                    <span>${idx === 0 ? "🏠" : "📦"} ${ponto.nome}</span>
-                    ${txtDistancia}
-                </div>
-                <div class="item-direita">
-                    ${botoesDireita}
-                </div>
-            </li>
+        if(index === 0){
+
+            return;
+
+        }
+
+        lista.innerHTML +=
+        `
+        <li class="${classe}">
+
+            📦 ${index}
+            - ${ponto.nome}
+
+            <br><br>
+
+            <button
+            onclick="
+            abrirGoogleMaps(
+            ${ponto.lat},
+            ${ponto.lng}
+            )">
+
+            Google Maps
+
+            </button>
+
+            <button
+            onclick="
+            abrirWaze(
+            ${ponto.lat},
+            ${ponto.lng}
+            )">
+
+            Waze
+
+            </button>
+
+        </li>
         `;
+
     });
+
 }
 
-function abrirGoogleMaps(lat, lng) {
-    // URL limpa sem caracteres inválidos - Garante ativação direta do app no mobile
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=two-wheeler`;
-    window.open(url, '_blank');
+function atualizarProximaEntrega(){
+
+    const div =
+    document.getElementById(
+    "proximaEntrega"
+    );
+
+    if(
+    indiceAtual >=
+    rotaOtimizada.length
+    ){
+
+        div.innerHTML =
+        `
+        <h3>
+        🎉 Todas as entregas concluídas
+        </h3>
+        `;
+
+        return;
+
+    }
+
+    const parada =
+    rotaOtimizada[
+    indiceAtual
+    ];
+
+    div.innerHTML =
+    `
+    <strong>
+    ${parada.nome}
+    </strong>
+
+    <br><br>
+
+    <button
+    onclick="
+    abrirGoogleMaps(
+    ${parada.lat},
+    ${parada.lng}
+    )">
+
+    Navegar
+
+    </button>
+    `;
+
 }
 
-function confirmarChegada() {
+function concluirEntrega(){
+
+    if(
+    indiceAtual >=
+    rotaOtimizada.length
+    ){
+
+        return;
+
+    }
+
     indiceAtual++;
-    atualizarInterface();
+
+    atualizarProximaEntrega();
+
+    renderizarListaOtimizada();
+
 }
 
-function reiniciarSistema() {
-    document.getElementById("painel-concluido").style.display = "none";
-    document.getElementById("area-cadastro").style.display = "block";
-    document.getElementById("bloco-inicial").style.display = "block";
-    
-    const btnCalcular = document.querySelector("#bloco-inicial button");
-    btnCalcular.innerText = "Calcular Menor Rota por Coordenadas";
-    btnCalcular.disabled = false;
-
-    PONTOS_ENTREGA = [{ nome: "Sua Localização Inicial", lat: -21.7642, lng: -43.3503 }];
-    rotaOtimizada = [];
-    proximasDistancias = [];
-    indiceAtual = 0;
-    renderizarListaInicial();
-}
-
-renderizarListaInicial();
 </script>
-</body>
-</html>
