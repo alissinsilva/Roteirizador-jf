@@ -1,450 +1,833 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Roteirizador Pro - Navegação</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
 
-<!-- Leaflet (Mapa Visual) -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<title>Roteirizador Pro</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
 <style>
+
 :root{
-    --bg-principal: #121212;
-    --bg-card: #1E1E1E;
-    --cor-azul: #4285F4;
-    --cor-azul-escuro: #3367D6;
-    --cor-verde: #34A853;
-    --texto-principal: #FFFFFF;
-    --texto-secundario: #9AA0A6;
-    --borda: #383838;
+--bg:#121212;
+--card:#1e1e1e;
+--azul:#4285F4;
+--verde:#34A853;
+--borda:#383838;
 }
 
 *{
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+margin:0;
+padding:0;
+box-sizing:border-box;
 }
 
 body{
-    background: var(--bg-principal);
-    color: var(--texto-principal);
-    font-family: 'Roboto', Arial, sans-serif;
-    overflow: hidden;
+background:var(--bg);
+color:white;
+font-family:Arial,sans-serif;
+overflow:hidden;
 }
 
-#mapa {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 52%;
-    z-index: 1;
+#mapa{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:55%;
+z-index:1;
 }
 
-/* REMOVE QUALQUER TEXTO OU CAIXA DO PLUGIN */
-.leaflet-control-container,
-.leaflet-routing-container {
-    display: none !important;
+.leaflet-routing-container{
+display:none !important;
 }
 
-.barra-pesquisa{
-    background: var(--bg-card);
-    border: 1px solid var(--borda);
-    border-radius: 50px;
-    padding: 8px 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.painel{
+position:absolute;
+bottom:0;
+left:0;
+right:0;
+height:45%;
+background:#121212;
+padding:15px;
+z-index:1000;
+overflow:auto;
 }
 
-.btn-adicionar{
-    background: var(--cor-azul);
-    color: white;
-    border-radius: 50%;
-    width: 38px;
-    height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    flex-shrink: 0;
-    cursor: pointer;
-    border: none;
+.barra{
+display:flex;
+gap:10px;
+margin-bottom:10px;
 }
 
-.btn-azul{
-    background: var(--cor-azul);
-    color: white;
-    border-radius: 10px;
-    padding: 12px;
-    font-size: 16px;
-    font-weight: 500;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border: none;
-    cursor: pointer;
-}
-.btn-azul:hover{
-    background: var(--cor-azul-escuro);
+.barra input{
+flex:1;
+padding:12px;
+background:#1e1e1e;
+border:1px solid #333;
+border-radius:10px;
+color:white;
 }
 
-.btn-cinza{
-    background: transparent;
-    border: 1px solid var(--borda);
-    color: white;
-    border-radius: 10px;
-    padding: 12px;
-    font-size: 16px;
-    width: 100%;
-    cursor: pointer;
+.btn-add{
+width:50px;
+background:var(--azul);
+border:none;
+color:white;
+border-radius:10px;
+font-size:22px;
+cursor:pointer;
 }
 
-.btn-verde{
-    background: var(--cor-verde);
-    color: white;
-    border-radius: 10px;
-    padding: 12px;
-    font-size: 16px;
-    font-weight: bold;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border: none;
-    cursor: pointer;
+.lista{
+max-height:180px;
+overflow:auto;
+margin-top:10px;
 }
 
-.icone-flutuante{
-    width: 50px;
-    height: 50px;
-    background: var(--bg-card);
-    border: 1px solid var(--borda);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    right: 16px;
-    z-index: 10;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    cursor: pointer;
+.item{
+display:flex;
+align-items:center;
+gap:10px;
+padding:10px;
+border-bottom:1px solid #333;
 }
 
-.item-parada{
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px;
-    border-bottom: 1px solid var(--borda);
-}
-.numero-parada{
-    width: 28px;
-    height: 28px;
-    background: var(--cor-azul);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 14px;
-}
-.numero-parada.atual {
-    background: var(--cor-verde);
+.numero{
+width:28px;
+height:28px;
+border-radius:50%;
+background:var(--azul);
+display:flex;
+justify-content:center;
+align-items:center;
+font-weight:bold;
 }
 
-.modal-fundo{
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.9);
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
+.numero.atual{
+background:var(--verde);
 }
-.modal-conteudo{
-    background: var(--bg-card);
-    border-radius: 20px;
-    padding: 24px;
-    width: 100%;
-    max-width: 400px;
+
+.botoes{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin-top:15px;
 }
+
+button{
+padding:12px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.azul{
+background:var(--azul);
+color:white;
+}
+
+.verde{
+background:var(--verde);
+color:white;
+}
+
+.cinza{
+background:#222;
+color:white;
+}
+
+.resumo{
+margin-top:10px;
+font-size:18px;
+font-weight:bold;
+}
+
 </style>
+
 </head>
+
 <body>
 
-<div class="relative w-full h-screen">
+<div id="mapa"></div>
 
-    <!-- MAPA -->
-    <div id="mapa"></div>
+<div class="painel">
 
-    <!-- BOTÃO MENU -->
-    <button class="absolute top-4 left-4 w-12 h-12 bg-black/50 rounded-full flex items-center justify-center z-20">
-        <i data-lucide="menu" class="text-white"></i>
-    </button>
+<div class="barra">
 
-    <!-- ÍCONES FLUTUANTES -->
-    <button class="icone-flutuante top-24">
-        <i data-lucide="layers" class="text-white"></i>
-    </button>
-    <button class="icone-flutuante top-24 mt-14">
-        <i data-lucide="map" class="text-white"></i>
-    </button>
+<input
+id="inputEndereco"
+placeholder="Digite o endereço completo">
 
-    <!-- PAINEL INFERIOR -->
-    <div class="absolute bottom-0 left-0 right-0 p-4 bg-[#121212] z-20">
-        
-        <!-- BARRA DE ADICIONAR -->
-        <div class="barra-pesquisa mb-4">
-            <i data-lucide="search" class="text-gray-400"></i>
-            <input id="inputEndereco" type="text" placeholder="Digite o endereço completo" class="bg-transparent border-none outline-none flex-1 text-white text-base">
-            <button onclick="adicionarParada()" class="btn-adicionar">+</button>
-        </div>
-
-        <!-- RESUMO -->
-        <div class="mb-3">
-            <p class="text-gray-400 text-base" id="resumoRota">0h00min • 0 paradas • 0.0 km</p>
-            <h2 class="text-xl font-bold mt-1">Rota Otimizada</h2>
-        </div>
-
-        <!-- LISTA DE PARADAS -->
-        <div id="listaParadas" class="mb-4 max-h-40 overflow-y-auto">
-            <p class="text-center text-gray-500 py-4">Nenhum endereço adicionado ainda</p>
-        </div>
-
-        <!-- BOTÕES DE AÇÃO -->
-        <div class="grid grid-cols-2 gap-3 mb-3">
-            <button onclick="abrirModalReotimizar()" class="btn-cinza">Reotimizar</button>
-            <button onclick="calcularMelhorRota()" class="btn-azul">Calcular Rota</button>
-        </div>
-
-        <!-- BOTÕES DE NAVEGAÇÃO E ENTREGA -->
-        <div class="grid grid-cols-2 gap-3">
-            <button onclick="navegarNoGoogleMaps()" class="btn-azul">
-                <i data-lucide="navigation" class="w-4 h-4"></i> Navegar
-            </button>
-            <button onclick="entregue()" class="btn-verde">
-                ✅ Entregue / Próxima
-            </button>
-        </div>
-
-    </div>
+<button
+class="btn-add"
+onclick="adicionarParada()">
++
+</button>
 
 </div>
 
-<!-- MODAL REOTIMIZAR -->
-<div id="modalReotimizar" class="modal-fundo hidden">
-    <div class="modal-conteudo">
-        <h3 class="text-xl font-bold mb-4">Reotimizar rota</h3>
-        <p class="text-gray-400 mb-6">Calcular a melhor ordem para economizar tempo.</p>
-        <button onclick="executarReotimizacao()" class="btn-azul mb-3">Reotimizar</button>
-        <button onclick="fecharModalReotimizar()" class="w-full text-center text-blue-400 py-3">Cancelar</button>
-    </div>
+<div
+class="resumo"
+id="resumoRota">
+
+0h00min • 0 paradas • 0 km
+
 </div>
 
+<div
+class="lista"
+id="listaParadas">
+
+Nenhuma entrega pendente
+
+</div>
+
+<div class="botoes">
+
+<button
+class="azul"
+onclick="calcularMelhorRota()">
+
+Otimizar Rota
+
+</button>
+
+<button
+class="cinza"
+onclick="navegarNoGoogleMaps()">
+
+Navegar
+
+</button>
+
+</div>
+
+<div class="botoes">
+
+<button
+class="verde"
+onclick="entregue()">
+
+✅ Entregue / Próxima
+
+</button>
+
+<button
+class="azul"
+onclick="limparTudo()">
+
+🗑 Limpar
+
+</button>
+
+</div>
+
+</div>
 <script>
-lucide.createIcons();
 
 let mapa;
 let controleRota;
+
+let minhaLat = -21.7595;
+let minhaLng = -43.3424;
+
 let paradas = [];
-let indiceAtual = 0;
-let minhaLat, minhaLng;
 
-// INICIALIZAR COM GPS REAL
-function initMap() {
+
+// ==========================
+// INICIAR GPS
+// ==========================
+
+window.onload = () => {
+
     if(navigator.geolocation){
-        navigator.geolocation.getCurrentPosition(pos => {
-            minhaLat = pos.coords.latitude;
-            minhaLng = pos.coords.longitude;
-            criarMapa();
-        }, () => {
-            alert("Não foi possível obter sua localização. Usando padrão.");
-            minhaLat = -21.7595;
-            minhaLng = -43.3424;
-            criarMapa();
-        });
-    }
-}
 
-function criarMapa(){
-    mapa = L.map('mapa').setView([minhaLat, minhaLng], 15);
+        navigator.geolocation.getCurrentPosition(
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
-    }).addTo(mapa);
+            pos => {
 
-    // Marcador azul da sua localização GPS
-    L.marker([minhaLat, minhaLng], {
-        icon: L.divIcon({
-            className: 'custom-div-icon',
-            html: `<div style='background:#4285F4; width:15px; height:15px; border-radius:50%; border:3px solid white;'></div>`,
-            iconSize: [15, 15],
-            iconAnchor: [7, 7]
-        })
-    }).addTo(mapa).bindPopup("Você está aqui");
-}
+                minhaLat = pos.coords.latitude;
+                minhaLng = pos.coords.longitude;
 
-// 🔍 FUNÇÃO PARA CONVERTER ENDEREÇO EM LAT E LONG
-async function geocodificarEndereco(endereco){
-    try {
-        const resposta = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(endereco)}&format=json&limit=1`);
-        const dados = await resposta.json();
-        
-        if(dados.length > 0){
-            return {
-                lat: parseFloat(dados[0].lat),
-                lng: parseFloat(dados[0].lon),
-                enderecoCompleto: dados[0].display_name
-            };
-        } else {
-            return null;
-        }
-    } catch (erro) {
-        console.error("Erro ao buscar endereço:", erro);
-        return null;
-    }
-}
+                iniciarMapa();
 
-// ADICIONAR PARADA COM COORDENADAS REAIS
-async function adicionarParada(){
-    const endereco = document.getElementById("inputEndereco").value.trim();
-    if(!endereco){
-        alert("Digite um endereço primeiro!");
-        return;
-    }
+            },
 
-    const local = await geocodificarEndereco(endereco);
-    
-    if(local){
-        paradas.push({
-            endereco: endereco, // Salva o nome que você digitou
-            lat: local.lat,
-            lng: local.lng
-        });
+            erro => {
 
-        atualizarListaParadas();
-        document.getElementById("inputEndereco").value = "";
+                console.log(erro);
+
+                iniciarMapa();
+
+            },
+
+            {
+                enableHighAccuracy:true,
+                timeout:10000
+            }
+
+        );
+
     }else{
-        alert("Endereço não encontrado. Tente escrever com mais detalhes.");
+
+        iniciarMapa();
+
     }
+
+};
+
+
+// ==========================
+// MAPA
+// ==========================
+
+function iniciarMapa(){
+
+    mapa = L.map("mapa").setView(
+        [minhaLat,minhaLng],
+        14
+    );
+
+    L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+            attribution:"© OpenStreetMap"
+        }
+    ).addTo(mapa);
+
+    L.marker(
+        [minhaLat,minhaLng]
+    )
+    .addTo(mapa)
+    .bindPopup("Minha localização");
+
 }
 
-// ATUALIZAR LISTA
-function atualizarListaParadas(){
-    const lista = document.getElementById("listaParadas");
-    if(paradas.length === 0){
-        lista.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhum endereço adicionado ainda</p>`;
+
+// ==========================
+// GEOCODIFICAR ENDEREÇO
+// ==========================
+
+async function geocodificarEndereco(endereco){
+
+    try{
+
+        const resposta = await fetch(
+
+            `https://nominatim.openstreetmap.org/search?format=json&countrycodes=br&addressdetails=1&limit=1&q=${encodeURIComponent(endereco)}`
+
+        );
+
+        const dados = await resposta.json();
+
+        if(!dados.length){
+
+            return null;
+
+        }
+
+        return {
+
+            lat: parseFloat(dados[0].lat),
+
+            lng: parseFloat(dados[0].lon),
+
+            endereco:
+            dados[0].display_name
+
+        };
+
+    }
+
+    catch(erro){
+
+        console.error(erro);
+
+        return null;
+
+    }
+
+}
+
+
+// ==========================
+// ADICIONAR PARADA
+// ==========================
+
+async function adicionarParada(){
+
+    const campo =
+    document.getElementById(
+        "inputEndereco"
+    );
+
+    const endereco =
+    campo.value.trim();
+
+    if(!endereco){
+
+        alert(
+            "Digite um endereço."
+        );
+
         return;
+
+    }
+
+    campo.value = "";
+
+    const local =
+    await geocodificarEndereco(
+        endereco
+    );
+
+    if(!local){
+
+        alert(
+            "Endereço não encontrado."
+        );
+
+        return;
+
+    }
+
+    paradas.push({
+
+        endereco: local.endereco,
+
+        lat: local.lat,
+
+        lng: local.lng
+
+    });
+
+    atualizarListaParadas();
+
+}
+
+
+// ==========================
+// LISTA
+// ==========================
+
+function atualizarListaParadas(){
+
+    const lista =
+    document.getElementById(
+        "listaParadas"
+    );
+
+    if(paradas.length === 0){
+
+        lista.innerHTML =
+        "Nenhuma entrega pendente";
+
+        return;
+
     }
 
     lista.innerHTML = "";
-    paradas.forEach((p, i) => {
-        const div = document.createElement("div");
-        div.className = "item-parada";
-        div.innerHTML = `
-            <div class="numero-parada ${i === indiceAtual ? 'atual' : ''}">${i+1}</div>
-            <div class="flex-1">
-                <p class="font-bold text-sm">${p.endereco}</p>
+
+    paradas.forEach(
+
+        (p,index)=>{
+
+            lista.innerHTML += `
+
+            <div class="item">
+
+                <div class="numero">
+
+                    ${index+1}
+
+                </div>
+
+                <div>
+
+                    ${p.endereco}
+
+                </div>
+
             </div>
-            <div class="bg-blue-500/20 text-blue-400 px-2 py-1 rounded-lg text-xs">A${i+1}</div>
-        `;
-        lista.appendChild(div);
-    });
+
+            `;
+
+        }
+
+    );
+
 }
 
-// CALCULAR ROTA
-function calcularMelhorRota(){
-    if(paradas.length === 0){
-        alert("Adicione pelo menos uma parada!");
+
+// ==========================
+// LIMPAR TUDO
+// ==========================
+
+function limparTudo(){
+
+    if(
+        !confirm(
+            "Apagar todas as entregas?"
+        )
+    ){
         return;
     }
 
-    if(controleRota) mapa.removeControl(controleRota);
+    paradas = [];
 
-    let waypoints = [L.latLng(minhaLat, minhaLng)];
-    
-    // Adiciona apenas da parada atual em diante
-    for(let i = indiceAtual; i < paradas.length; i++){
-        waypoints.push(L.latLng(paradas[i].lat, paradas[i].lng));
-    }
-
-    controleRota = L.Routing.control({
-        waypoints: waypoints,
-        show: false,
-        addWaypoints: false,
-        lineOptions: { 
-            styles: [{color: '#4285F4', weight: 6, opacity: 0.9}] 
-        },
-        createMarker: () => null
-    }).addTo(mapa);
-
-    controleRota.on('routesfound', function(e) {
-        const sum = e.routes[0].summary;
-        const tempo = Math.round(sum.totalTime / 60);
-        const km = (sum.totalDistance / 1000).toFixed(1);
-        document.getElementById("resumoRota").innerText = 
-            `${Math.floor(tempo/60)}h${tempo%60}min • ${paradas.length - indiceAtual} paradas • ${km} km`;
-    });
-}
-
-// 🔵 ABRIR NO GOOGLE MAPS PARA NAVEGAR
-function navegarNoGoogleMaps(){
-    if(paradas.length === 0 || indiceAtual >= paradas.length){
-        alert("Não há endereço para navegar!");
-        return;
-    }
-
-    const destino = paradas[indiceAtual];
-    // URL DIRETA PARA O GOOGLE MAPS USANDO LAT E LONG EXATOS
-    const url = `https://www.google.com/maps/dir/?api=1&origin=${minhaLat},${minhaLng}&destination=${destino.lat},${destino.lng}&travelmode=driving`;
-    
-    window.open(url, '_blank');
-}
-
-// ✅ BOTÃO ENTREGUE - PULA PARA O PRÓXIMO
-function entregue(){
-    if(paradas.length === 0){
-        alert("Nenhuma entrega na lista!");
-        return;
-    }
-
-    if(indiceAtual >= paradas.length - 1){
-        alert("Todas as entregas foram concluídas! 🎉");
-        paradas = [];
-        indiceAtual = 0;
-        atualizarListaParadas();
-        document.getElementById("resumoRota").innerText = "0h00min • 0 paradas • 0.0 km";
-        if(controleRota) mapa.removeControl(controleRota);
-        return;
-    }
-
-    // AVANÇA PARA PRÓXIMA
-    indiceAtual++;
     atualizarListaParadas();
-    
-    // ATUALIZA ROTA NO MAPA
-    calcularMelhorRota();
-    
-    // ABRE NAVEGAÇÃO AUTOMATICAMENTE
-    navegarNoGoogleMaps();
+
+    document.getElementById(
+        "resumoRota"
+    ).innerHTML =
+    "0h00min • 0 paradas • 0 km";
+
+    if(controleRota){
+
+        mapa.removeControl(
+            controleRota
+        );
+
+        controleRota = null;
+
+    }
+
+}
+//
+// ==========================
+// CALCULAR ROTA OTIMIZADA
+// USANDO OSRM TRIP API
+// ==========================
+//
+
+async function calcularMelhorRota(){
+
+    if(paradas.length === 0){
+
+        alert("Adicione pelo menos uma parada.");
+
+        return;
+
+    }
+
+    try{
+
+        let coordenadas =
+        `${minhaLng},${minhaLat}`;
+
+        paradas.forEach(p => {
+
+            coordenadas +=
+            `;${p.lng},${p.lat}`;
+
+        });
+
+        const resposta =
+        await fetch(
+
+        `https://router.project-osrm.org/trip/v1/driving/${coordenadas}?source=first&roundtrip=false&steps=true&geometries=geojson`
+
+        );
+
+        const dados =
+        await resposta.json();
+
+        if(!dados.waypoints){
+
+            throw new Error(
+                "Erro OSRM"
+            );
+
+        }
+
+        //
+        // REORDENA AS ENTREGAS
+        //
+
+        let novaRota = [];
+
+        dados.waypoints
+
+        .sort(
+            (a,b)=>
+            a.waypoint_index -
+            b.waypoint_index
+        )
+
+        .forEach(w => {
+
+            if(
+                w.waypoint_index > 0
+            ){
+
+                novaRota.push(
+
+                    paradas[
+                        w.waypoint_index - 1
+                    ]
+
+                );
+
+            }
+
+        });
+
+        paradas = novaRota;
+
+        atualizarListaParadas();
+
+        //
+        // REMOVE ROTA ANTIGA
+        //
+
+        if(controleRota){
+
+            mapa.removeControl(
+                controleRota
+            );
+
+        }
+
+        //
+        // DESENHA NOVA ROTA
+        //
+
+        let waypoints = [
+
+            L.latLng(
+                minhaLat,
+                minhaLng
+            )
+
+        ];
+
+        paradas.forEach(p => {
+
+            waypoints.push(
+
+                L.latLng(
+                    p.lat,
+                    p.lng
+                )
+
+            );
+
+        });
+
+        controleRota =
+        L.Routing.control({
+
+            waypoints,
+
+            addWaypoints:false,
+
+            draggableWaypoints:false,
+
+            routeWhileDragging:false,
+
+            show:false,
+
+            fitSelectedRoutes:true,
+
+            createMarker:
+            function(i,wp){
+
+                if(i===0){
+
+                    return L.marker(
+                        wp.latLng
+                    ).bindPopup(
+                        "Minha localização"
+                    );
+
+                }
+
+                return L.marker(
+                    wp.latLng
+                ).bindPopup(
+
+                    `Parada ${i}`
+
+                );
+
+            }
+
+        }).addTo(mapa);
+
+        //
+        // RESUMO
+        //
+
+        controleRota.on(
+            "routesfound",
+
+            function(e){
+
+                const resumo =
+                e.routes[0].summary;
+
+                const km =
+                (
+                    resumo.totalDistance
+                    /1000
+                ).toFixed(1);
+
+                const tempo =
+                Math.round(
+                    resumo.totalTime
+                    /60
+                );
+
+                document
+                .getElementById(
+                    "resumoRota"
+                )
+                .innerHTML =
+
+                `${Math.floor(
+                    tempo/60
+                )}h${tempo%60}min • ${paradas.length} paradas • ${km} km`;
+
+            }
+
+        );
+
+    }
+
+    catch(erro){
+
+        console.error(
+            erro
+        );
+
+        alert(
+            "Erro ao calcular rota."
+        );
+
+    }
+
 }
 
-// MODAL
-function abrirModalReotimizar(){ document.getElementById("modalReotimizar").classList.remove("hidden"); }
-function fecharModalReotimizar(){ document.getElementById("modalReotimizar").classList.add("hidden"); }
-function executarReotimizacao(){ fecharModalReotimizar(); calcularMelhorRota(); }
 
-window.onload = initMap;
+
+//
+// ==========================
+// GOOGLE MAPS
+// ==========================
+//
+
+function navegarNoGoogleMaps(){
+
+    if(
+        paradas.length === 0
+    ){
+
+        alert(
+            "Nenhuma entrega pendente."
+        );
+
+        return;
+
+    }
+
+    const destino =
+    paradas[0];
+
+    const url =
+
+    `https://www.google.com/maps/dir/?api=1&origin=${minhaLat},${minhaLng}&destination=${destino.lat},${destino.lng}&travelmode=driving`;
+
+    window.open(
+        url,
+        "_blank"
+    );
+
+}
+
+
+
+//
+// ==========================
+// ENTREGUE / PRÓXIMA
+// ==========================
+//
+
+function entregue(){
+
+    if(
+        paradas.length === 0
+    ){
+
+        alert(
+            "Nenhuma entrega."
+        );
+
+        return;
+
+    }
+
+    //
+    // REMOVE ENTREGA
+    // CONCLUÍDA
+    //
+
+    paradas.shift();
+
+    atualizarListaParadas();
+
+    //
+    // TEM MAIS ENTREGAS?
+    //
+
+    if(
+        paradas.length > 0
+    ){
+
+        calcularMelhorRota();
+
+    }
+
+    else{
+
+        document
+        .getElementById(
+            "resumoRota"
+        )
+        .innerHTML =
+        "0h00min • 0 paradas • 0 km";
+
+        if(controleRota){
+
+            mapa.removeControl(
+                controleRota
+            );
+
+            controleRota = null;
+
+        }
+
+        alert(
+            "Todas as entregas foram concluídas."
+        );
+
+    }
+
+}
+
 </script>
+
 </body>
 </html>
