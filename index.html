@@ -56,7 +56,7 @@ body{
     background: var(--bg-card);
     border: 1px solid var(--borda);
     border-radius: 50px;
-    padding: 10px 16px;
+    padding: 8px 14px;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -66,12 +66,12 @@ body{
     background: var(--cor-azul);
     color: white;
     border-radius: 50%;
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
+    font-size: 20px;
     flex-shrink: 0;
     cursor: pointer;
     border: none;
@@ -80,15 +80,15 @@ body{
 .btn-azul{
     background: var(--cor-azul);
     color: white;
-    border-radius: 12px;
-    padding: 16px;
-    font-size: 18px;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 16px;
     font-weight: 500;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     border: none;
     cursor: pointer;
 }
@@ -100,9 +100,9 @@ body{
     background: transparent;
     border: 1px solid var(--borda);
     color: white;
-    border-radius: 12px;
-    padding: 16px;
-    font-size: 18px;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 16px;
     width: 100%;
     cursor: pointer;
 }
@@ -110,22 +110,22 @@ body{
 .btn-verde{
     background: var(--cor-verde);
     color: white;
-    border-radius: 12px;
-    padding: 16px;
-    font-size: 18px;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 16px;
     font-weight: bold;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     border: none;
     cursor: pointer;
 }
 
 .icone-flutuante{
-    width: 56px;
-    height: 56px;
+    width: 50px;
+    height: 50px;
     background: var(--bg-card);
     border: 1px solid var(--borda);
     border-radius: 50%;
@@ -143,18 +143,19 @@ body{
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px;
+    padding: 10px;
     border-bottom: 1px solid var(--borda);
 }
 .numero-parada{
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     background: var(--cor-azul);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
+    font-size: 14px;
 }
 .numero-parada.atual {
     background: var(--cor-verde);
@@ -187,7 +188,7 @@ body{
     <div id="mapa"></div>
 
     <!-- BOTÃO MENU -->
-    <button class="absolute top-4 left-4 w-14 h-14 bg-black/50 rounded-full flex items-center justify-center z-20">
+    <button class="absolute top-4 left-4 w-12 h-12 bg-black/50 rounded-full flex items-center justify-center z-20">
         <i data-lucide="menu" class="text-white"></i>
     </button>
 
@@ -195,7 +196,7 @@ body{
     <button class="icone-flutuante top-24">
         <i data-lucide="layers" class="text-white"></i>
     </button>
-    <button class="icone-flutuante top-24 mt-16">
+    <button class="icone-flutuante top-24 mt-14">
         <i data-lucide="map" class="text-white"></i>
     </button>
 
@@ -205,14 +206,14 @@ body{
         <!-- BARRA DE ADICIONAR -->
         <div class="barra-pesquisa mb-4">
             <i data-lucide="search" class="text-gray-400"></i>
-            <input id="inputEndereco" type="text" placeholder="Digite o endereço completo" class="bg-transparent border-none outline-none flex-1 text-white text-lg">
+            <input id="inputEndereco" type="text" placeholder="Digite o endereço completo" class="bg-transparent border-none outline-none flex-1 text-white text-base">
             <button onclick="adicionarParada()" class="btn-adicionar">+</button>
         </div>
 
         <!-- RESUMO -->
         <div class="mb-3">
-            <p class="text-gray-400 text-lg" id="resumoRota">0h00min • 0 paradas • 0.0 km</p>
-            <h2 class="text-2xl font-bold mt-1">Rota Otimizada</h2>
+            <p class="text-gray-400 text-base" id="resumoRota">0h00min • 0 paradas • 0.0 km</p>
+            <h2 class="text-xl font-bold mt-1">Rota Otimizada</h2>
         </div>
 
         <!-- LISTA DE PARADAS -->
@@ -229,7 +230,7 @@ body{
         <!-- BOTÕES DE NAVEGAÇÃO E ENTREGA -->
         <div class="grid grid-cols-2 gap-3">
             <button onclick="navegarNoGoogleMaps()" class="btn-azul">
-                <i data-lucide="navigation" class="w-5 h-5"></i> Navegar
+                <i data-lucide="navigation" class="w-4 h-4"></i> Navegar
             </button>
             <button onclick="entregue()" class="btn-verde">
                 ✅ Entregue / Próxima
@@ -243,7 +244,7 @@ body{
 <!-- MODAL REOTIMIZAR -->
 <div id="modalReotimizar" class="modal-fundo hidden">
     <div class="modal-conteudo">
-        <h3 class="text-2xl font-bold mb-4">Reotimizar rota</h3>
+        <h3 class="text-xl font-bold mb-4">Reotimizar rota</h3>
         <p class="text-gray-400 mb-6">Calcular a melhor ordem para economizar tempo.</p>
         <button onclick="executarReotimizacao()" class="btn-azul mb-3">Reotimizar</button>
         <button onclick="fecharModalReotimizar()" class="w-full text-center text-blue-400 py-3">Cancelar</button>
@@ -293,21 +294,49 @@ function criarMapa(){
     }).addTo(mapa).bindPopup("Você está aqui");
 }
 
-// ADICIONAR PARADA
-function adicionarParada(){
+// 🔍 FUNÇÃO PARA CONVERTER ENDEREÇO EM LAT E LONG
+async function geocodificarEndereco(endereco){
+    try {
+        const resposta = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(endereco)}&format=json&limit=1`);
+        const dados = await resposta.json();
+        
+        if(dados.length > 0){
+            return {
+                lat: parseFloat(dados[0].lat),
+                lng: parseFloat(dados[0].lon),
+                enderecoCompleto: dados[0].display_name
+            };
+        } else {
+            return null;
+        }
+    } catch (erro) {
+        console.error("Erro ao buscar endereço:", erro);
+        return null;
+    }
+}
+
+// ADICIONAR PARADA COM COORDENADAS REAIS
+async function adicionarParada(){
     const endereco = document.getElementById("inputEndereco").value.trim();
     if(!endereco){
         alert("Digite um endereço primeiro!");
         return;
     }
 
-    // Simula coordenadas próximas (para teste)
-    const lat = minhaLat + (Math.random() - 0.5) * 0.05;
-    const lng = minhaLng + (Math.random() - 0.5) * 0.05;
+    const local = await geocodificarEndereco(endereco);
+    
+    if(local){
+        paradas.push({
+            endereco: endereco, // Salva o nome que você digitou
+            lat: local.lat,
+            lng: local.lng
+        });
 
-    paradas.push({ endereco, lat, lng });
-    atualizarListaParadas();
-    document.getElementById("inputEndereco").value = "";
+        atualizarListaParadas();
+        document.getElementById("inputEndereco").value = "";
+    }else{
+        alert("Endereço não encontrado. Tente escrever com mais detalhes.");
+    }
 }
 
 // ATUALIZAR LISTA
@@ -325,9 +354,9 @@ function atualizarListaParadas(){
         div.innerHTML = `
             <div class="numero-parada ${i === indiceAtual ? 'atual' : ''}">${i+1}</div>
             <div class="flex-1">
-                <p class="font-bold">${p.endereco}</p>
+                <p class="font-bold text-sm">${p.endereco}</p>
             </div>
-            <div class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-lg">A${i+1}</div>
+            <div class="bg-blue-500/20 text-blue-400 px-2 py-1 rounded-lg text-xs">A${i+1}</div>
         `;
         lista.appendChild(div);
     });
@@ -376,7 +405,7 @@ function navegarNoGoogleMaps(){
     }
 
     const destino = paradas[indiceAtual];
-    // URL DIRETA PARA O GOOGLE MAPS
+    // URL DIRETA PARA O GOOGLE MAPS USANDO LAT E LONG EXATOS
     const url = `https://www.google.com/maps/dir/?api=1&origin=${minhaLat},${minhaLng}&destination=${destino.lat},${destino.lng}&travelmode=driving`;
     
     window.open(url, '_blank');
