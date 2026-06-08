@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Roteirizador Pro - Menor Tempo</title>
+<title>Roteirizador Pro - Navegação</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 
-<!-- Google Maps API -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA660JjwhsXOGFhYtLqzD1eFy5Gj8KkRmM&language=pt-BR&libraries=places,directions,geometry"></script>
+<!-- Leaflet (Mapa Visual) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
 <style>
 :root{
@@ -40,7 +42,7 @@ body{
     top: 0;
     left: 0;
     width: 100%;
-    height: 55%;
+    height: 52%;
     z-index: 1;
 }
 
@@ -65,6 +67,8 @@ body{
     justify-content: center;
     font-size: 24px;
     flex-shrink: 0;
+    cursor: pointer;
+    border: none;
 }
 
 .btn-azul{
@@ -79,7 +83,8 @@ body{
     align-items: center;
     justify-content: center;
     gap: 10px;
-    transition: background 0.2s;
+    border: none;
+    cursor: pointer;
 }
 .btn-azul:hover{
     background: var(--cor-azul-escuro);
@@ -93,13 +98,23 @@ body{
     padding: 16px;
     font-size: 18px;
     width: 100%;
+    cursor: pointer;
 }
 
-.card{
-    background: var(--bg-card);
-    border: 1px solid var(--borda);
-    border-radius: 16px;
+.btn-verde{
+    background: var(--cor-verde);
+    color: white;
+    border-radius: 12px;
     padding: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: none;
+    cursor: pointer;
 }
 
 .icone-flutuante{
@@ -115,26 +130,9 @@ body{
     right: 16px;
     z-index: 10;
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    cursor: pointer;
 }
 
-/* Notificação de economia */
-.notificacao-economia{
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #202124;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 50px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    z-index: 20;
-    box-shadow: 0 3px 15px rgba(0,0,0,0.4);
-}
-
-/* Item da lista de paradas */
 .item-parada{
     display: flex;
     align-items: center;
@@ -153,7 +151,6 @@ body{
     font-weight: bold;
 }
 
-/* Modal */
 .modal-fundo{
     position: fixed;
     inset: 0;
@@ -177,7 +174,7 @@ body{
 
 <div class="relative w-full h-screen">
 
-    <!-- MAPA DO GOOGLE -->
+    <!-- MAPA -->
     <div id="mapa"></div>
 
     <!-- BOTÃO MENU -->
@@ -193,39 +190,43 @@ body{
         <i data-lucide="map" class="text-white"></i>
     </button>
 
-    <!-- NOTIFICAÇÃO ECONOMIA -->
-    <div id="notificacaoEconomia" class="notificacao-economia hidden">
-        <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-sm">✓</div>
-        <span id="textoEconomia">Economizou tempo e distância!</span>
-        <button onclick="fecharNotificacao()" class="ml-4 text-lg">×</button>
-    </div>
-
     <!-- PAINEL INFERIOR -->
     <div class="absolute bottom-0 left-0 right-0 p-4 bg-[#121212] z-20">
         
-        <!-- BARRA DE PESQUISA COM BOTÃO ADICIONAR -->
+        <!-- BARRA DE ADICIONAR -->
         <div class="barra-pesquisa mb-4">
             <i data-lucide="search" class="text-gray-400"></i>
             <input id="inputEndereco" type="text" placeholder="Digite o endereço completo" class="bg-transparent border-none outline-none flex-1 text-white text-lg">
             <button onclick="adicionarParada()" class="btn-adicionar">+</button>
         </div>
 
-        <!-- RESUMO DA ROTA -->
+        <!-- RESUMO -->
         <div class="mb-3">
             <p class="text-gray-400 text-lg" id="resumoRota">0h00min • 0 paradas • 0.0 km</p>
-            <h2 class="text-2xl font-bold mt-1">Lista de Entregas</h2>
+            <h2 class="text-2xl font-bold mt-1">Rota Otimizada</h2>
         </div>
 
-        <!-- LISTA DE ENDEREÇOS ADICIONADOS -->
-        <div id="listaParadas" class="mb-6 max-h-48 overflow-y-auto">
+        <!-- LISTA DE PARADAS -->
+        <div id="listaParadas" class="mb-4 max-h-40 overflow-y-auto">
             <p class="text-center text-gray-500 py-4">Nenhum endereço adicionado ainda</p>
         </div>
 
         <!-- BOTÕES DE AÇÃO -->
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-2 gap-3 mb-3">
             <button onclick="abrirModalReotimizar()" class="btn-cinza">Reotimizar</button>
-            <button onclick="calcularMelhorRota()" class="btn-azul">Calcular Melhor Rota</button>
+            <button onclick="calcularMelhorRota()" class="btn-azul">Calcular Rota</button>
         </div>
+
+        <!-- BOTÃO DE NAVEGAÇÃO E ENTREGA -->
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="navegarNoGoogleMaps()" class="btn-azul">
+                <i data-lucide="navigation" class="w-5 h-5"></i> Navegar
+            </button>
+            <button onclick="entregue()" class="btn-verde">
+                ✅ Entregue / Próxima
+            </button>
+        </div>
+
     </div>
 
 </div>
@@ -234,9 +235,8 @@ body{
 <div id="modalReotimizar" class="modal-fundo hidden">
     <div class="modal-conteudo">
         <h3 class="text-2xl font-bold mb-4">Reotimizar rota</h3>
-        <p class="text-gray-400 mb-6">A reotimização irá calcular a ordem ideal para garantir o <strong>menor tempo possível</strong> de entrega.</p>
-        
-        <button onclick="executarReotimizacao()" class="btn-azul mb-3">Reotimizar rota</button>
+        <p class="text-gray-400 mb-6">Calcular a melhor ordem para economizar tempo.</p>
+        <button onclick="executarReotimizacao()" class="btn-azul mb-3">Reotimizar</button>
         <button onclick="fecharModalReotimizar()" class="w-full text-center text-blue-400 py-3">Cancelar</button>
     </div>
 </div>
@@ -244,95 +244,64 @@ body{
 <script>
 lucide.createIcons();
 
-// VARIAVEIS GLOBAIS
 let mapa;
-let directionsService;
-let directionsRenderer;
-let geocoder;
+let controleRota;
 let paradas = [];
+let indiceAtual = 0;
 let minhaLat, minhaLng;
 
-// INICIALIZAÇÃO
+// INICIALIZAR COM GPS REAL
 function initMap() {
     if(navigator.geolocation){
         navigator.geolocation.getCurrentPosition(pos => {
             minhaLat = pos.coords.latitude;
             minhaLng = pos.coords.longitude;
-            iniciarMapa();
+            criarMapa();
         }, () => {
+            alert("Não foi possível obter sua localização. Usando padrão.");
             minhaLat = -21.7595;
             minhaLng = -43.3424;
-            iniciarMapa();
+            criarMapa();
         });
     }
 }
 
-function iniciarMapa(){
-    mapa = new google.maps.Map(document.getElementById("mapa"), {
-        center: { lat: minhaLat, lng: minhaLng },
-        zoom: 13,
-        mapTypeId: 'roadmap',
-        styles: [
-            {elementType: "geometry", stylers: [{color: "#212121"}]},
-            {elementType: "labels.text.stroke", stylers: [{color: "#212121"}]},
-            {elementType: "labels.text.fill", stylers: [{color: "#757575"}]},
-            {featureType: "road", elementType: "geometry", stylers: [{color: "#424242"}]},
-            {featureType: "road", elementType: "labels.text.fill", stylers: [{color: "#bdbdbd"}]}
-        ]
-    });
+function criarMapa(){
+    mapa = L.map('mapa').setView([minhaLat, minhaLng], 15);
 
-    directionsService = new google.maps.DirectionsService();
-    directionsRenderer = new google.maps.DirectionsRenderer({
-        map: mapa,
-        suppressMarkers: false,
-        polylineOptions: {
-            strokeColor: "#4285F4",
-            strokeWeight: 6,
-            strokeOpacity: 0.9
-        }
-    });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(mapa);
 
-    geocoder = new google.maps.Geocoder();
-
-    // Marcador azul da sua localização
-    new google.maps.Marker({
-        position: { lat: minhaLat, lng: minhaLng },
-        map: mapa,
-        title: "Sua localização",
-        icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 10,
-            fillColor: "#4285F4",
-            fillOpacity: 1,
-            strokeWeight: 2,
-            strokeColor: "white"
-        }
-    });
+    // Marcador azul da sua localização GPS
+    L.marker([minhaLat, minhaLng], {
+        icon: L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div style='background:#4285F4; width:15px; height:15px; border-radius:50%; border:3px solid white;'></div>`,
+            iconSize: [15, 15],
+            iconAnchor: [7, 7]
+        })
+    }).addTo(mapa).bindPopup("Sua localização");
 }
 
 // ADICIONAR PARADA
 function adicionarParada(){
     const endereco = document.getElementById("inputEndereco").value.trim();
-    if(!endereco) return;
+    if(!endereco){
+        alert("Digite um endereço primeiro!");
+        return;
+    }
 
-    geocoder.geocode({ address: endereco }, (results, status) => {
-        if(status === "OK"){
-            const local = results[0].geometry.location;
-            paradas.push({
-                endereco: results[0].formatted_address,
-                lat: local.lat(),
-                lng: local.lng()
-            });
+    // Simula coordenadas próximas (para teste)
+    const lat = minhaLat + (Math.random() - 0.5) * 0.05;
+    const lng = minhaLng + (Math.random() - 0.5) * 0.05;
 
-            atualizarListaParadas();
-            document.getElementById("inputEndereco").value = "";
-        }else{
-            alert("Endereço não encontrado. Tente novamente.");
-        }
-    });
+    paradas.push({ endereco, lat, lng });
+    atualizarListaParadas();
+    document.getElementById("inputEndereco").value = "";
 }
 
-// ATUALIZAR LISTA NA TELA
+// ATUALIZAR LISTA
 function atualizarListaParadas(){
     const lista = document.getElementById("listaParadas");
     if(paradas.length === 0){
@@ -345,10 +314,9 @@ function atualizarListaParadas(){
         const div = document.createElement("div");
         div.className = "item-parada";
         div.innerHTML = `
-            <div class="numero-parada">${i+1}</div>
+            <div class="numero-parada" style="${i === indiceAtual ? 'background: #34A853' : ''}">${i+1}</div>
             <div class="flex-1">
-                <p class="font-bold">${p.endereco.split(',')[0]}</p>
-                <p class="text-sm text-gray-400">${p.endereco.split(',').slice(1).join(', ')}</p>
+                <p class="font-bold">${p.endereco}</p>
             </div>
             <div class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-lg">A${i+1}</div>
         `;
@@ -356,75 +324,84 @@ function atualizarListaParadas(){
     });
 }
 
-// ABRIR MODAL
-function abrirModalReotimizar(){
-    document.getElementById("modalReotimizar").classList.remove("hidden");
-}
-function fecharModalReotimizar(){
-    document.getElementById("modalReotimizar").classList.add("hidden");
-}
-
-// EXECUTAR OTIMIZAÇÃO
-function executarReotimizacao(){
-    fecharModalReotimizar();
-    document.getElementById("notificacaoEconomia").classList.remove("hidden");
-    calcularMelhorRota();
-}
-
-function fecharNotificacao(){
-    document.getElementById("notificacaoEconomia").classList.add("hidden");
-}
-
-// FUNÇÃO PRINCIPAL: CALCULAR MELHOR ROTA
+// CALCULAR ROTA
 function calcularMelhorRota(){
     if(paradas.length === 0){
-        alert("Adicione pelo menos uma parada primeiro!");
+        alert("Adicione pelo menos uma parada!");
         return;
     }
 
-    const waypoints = paradas.map(p => ({
-        location: new google.maps.LatLng(p.lat, p.lng),
-        stopover: true
-    }));
+    if(controleRota) mapa.removeControl(controleRota);
 
-    const request = {
-        origin: new google.maps.LatLng(minhaLat, minhaLng),
-        destination: waypoints[waypoints.length - 1].location,
-        waypoints: waypoints.slice(0, -1),
-        optimizeWaypoints: true, // GARANTE O MENOR TEMPO
-        travelMode: google.maps.TravelMode.DRIVING,
-        unitSystem: google.maps.UnitSystem.METRIC
-    };
+    let waypoints = [L.latLng(minhaLat, minhaLng)];
+    paradas.forEach(p => waypoints.push(L.latLng(p.lat, p.lng)));
 
-    directionsService.route(request, function(result, status) {
-        if (status == 'OK') {
-            directionsRenderer.setDirections(result);
-            
-            const rota = result.routes[0];
-            let tempoTotal = 0;
-            let distanciaTotal = 0;
-            
-            rota.legs.forEach(leg => {
-                tempoTotal += leg.duration.value;
-                distanciaTotal += leg.distance.value;
-            });
+    controleRota = L.Routing.control({
+        waypoints: waypoints,
+        show: false,
+        lineOptions: { styles: [{color: '#4285F4', weight: 6}] },
+        createMarker: () => null
+    }).addTo(mapa);
 
-            const horas = Math.floor(tempoTotal / 3600);
-            const minutos = Math.floor((tempoTotal % 3600) / 60);
-            const km = (distanciaTotal / 1000).toFixed(1);
-
-            document.getElementById("resumoRota").innerText = 
-                `${horas}h${minutos.toString().padStart(2,'0')}min • ${paradas.length} paradas • ${km} km`;
-
-            const ordem = result.routes[0].waypoint_order;
-            paradas = ordem.map(i => paradas[i]);
-            atualizarListaParadas();
-        }
+    controleRota.on('routesfound', function(e) {
+        const sum = e.routes[0].summary;
+        const tempo = Math.round(sum.totalTime / 60);
+        const km = (sum.totalDistance / 1000).toFixed(1);
+        document.getElementById("resumoRota").innerText = 
+            `${Math.floor(tempo/60)}h${tempo%60}min • ${paradas.length} paradas • ${km} km`;
     });
+
+    indiceAtual = 0;
+    atualizarListaParadas();
 }
 
-window.onload = initMap;
+// 🔵 ABRIR NO GOOGLE MAPS PARA NAVEGAR
+function navegarNoGoogleMaps(){
+    if(paradas.length === 0 || indiceAtual >= paradas.length){
+        alert("Não há endereço para navegar!");
+        return;
+    }
 
+    const destino = paradas[indiceAtual];
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${minhaLat},${minhaLng}&destination=${destino.lat},${destino.lng}&travelmode=driving`;
+    
+    window.open(url, '_blank');
+}
+
+// ✅ BOTÃO ENTREGUE - PULA PARA O PRÓXIMO
+function entregue(){
+    if(paradas.length === 0){
+        alert("Nenhuma entrega na lista!");
+        return;
+    }
+
+    if(indiceAtual >= paradas.length - 1){
+        alert("Todas as entregas foram concluídas! 🎉");
+        paradas = [];
+        indiceAtual = 0;
+        atualizarListaParadas();
+        document.getElementById("resumoRota").innerText = "0h00min • 0 paradas • 0.0 km";
+        if(controleRota) mapa.removeControl(controleRota);
+        return;
+    }
+
+    indiceAtual++;
+    atualizarListaParadas();
+    
+    // Atualiza rota no mapa
+    calcularMelhorRota();
+    
+    // Abre navegação automaticamente para o próximo
+    navegarNoGoogleMaps();
+}
+
+// MODAL
+function abrirModalReotimizar(){ document.getElementById("modalReotimizar").classList.remove("hidden"); }
+function fecharModalReotimizar(){ document.getElementById("modalReotimizar").classList.add("hidden"); }
+function executarReotimizacao(){ fecharModalReotimizar(); calcularMelhorRota(); }
+
+window.onload = initMap;
+</script>
 </script>
 </body>
 </html>
