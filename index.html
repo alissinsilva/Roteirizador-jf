@@ -1,860 +1,430 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roteirizador Pro - Menor Tempo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 
-<title>Mover Express Pro</title>
-
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-<script src="https://unpkg.com/html5-qrcode"></script>
+<!-- Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA660JjwhsXOGFhYtLqzD1eFy5Gj8KkRmM&language=pt-BR&libraries=places,directions,geometry"></script>
 
 <style>
+:root{
+    --bg-principal: #121212;
+    --bg-card: #1E1E1E;
+    --cor-azul: #4285F4;
+    --cor-azul-escuro: #3367D6;
+    --cor-verde: #34A853;
+    --texto-principal: #FFFFFF;
+    --texto-secundario: #9AA0A6;
+    --borda: #383838;
+}
 
 *{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Segoe UI,sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 body{
-background:#f4f6f9;
+    background: var(--bg-principal);
+    color: var(--texto-principal);
+    font-family: 'Roboto', Arial, sans-serif;
+    overflow: hidden;
 }
 
-.container{
-max-width:1200px;
-margin:auto;
-padding:15px;
+#mapa {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 55%;
+    z-index: 1;
 }
 
-.header{
-background:#1e40af;
-color:white;
-padding:15px;
-border-radius:10px;
-margin-bottom:15px;
+.barra-pesquisa{
+    background: var(--bg-card);
+    border: 1px solid var(--borda);
+    border-radius: 50px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.header h1{
-font-size:26px;
+.btn-adicionar{
+    background: var(--cor-azul);
+    color: white;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
 }
 
-.grid{
-display:grid;
-grid-template-columns:350px 1fr;
-gap:15px;
+.btn-azul{
+    background: var(--cor-azul);
+    color: white;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: 500;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background 0.2s;
+}
+.btn-azul:hover{
+    background: var(--cor-azul-escuro);
 }
 
-@media(max-width:900px){
-.grid{
-grid-template-columns:1fr;
-}
+.btn-cinza{
+    background: transparent;
+    border: 1px solid var(--borda);
+    color: white;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 18px;
+    width: 100%;
 }
 
 .card{
-background:white;
-padding:15px;
-border-radius:10px;
-box-shadow:0 2px 8px rgba(0,0,0,.1);
-margin-bottom:15px;
+    background: var(--bg-card);
+    border: 1px solid var(--borda);
+    border-radius: 16px;
+    padding: 16px;
 }
 
-input,
-button,
-select{
-width:100%;
-padding:12px;
-margin-top:8px;
-border-radius:8px;
-border:1px solid #ddd;
+.icone-flutuante{
+    width: 56px;
+    height: 56px;
+    background: var(--bg-card);
+    border: 1px solid var(--borda);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    right: 16px;
+    z-index: 10;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
-button{
-cursor:pointer;
-border:none;
-font-weight:bold;
+/* Notificação de economia */
+.notificacao-economia{
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #202124;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 20;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.4);
 }
 
-.btn-primary{
-background:#2563eb;
-color:white;
+/* Item da lista de paradas */
+.item-parada{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid var(--borda);
+}
+.numero-parada{
+    width: 32px;
+    height: 32px;
+    background: var(--cor-azul);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
 }
 
-.btn-success{
-background:#16a34a;
-color:white;
+/* Modal */
+.modal-fundo{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
 }
-
-.btn-danger{
-background:#dc2626;
-color:white;
+.modal-conteudo{
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 24px;
+    width: 100%;
+    max-width: 400px;
 }
-
-.btn-dark{
-background:#334155;
-color:white;
-}
-
-#map{
-height:600px;
-border-radius:10px;
-}
-
-.lista{
-list-style:none;
-}
-
-.lista li{
-padding:10px;
-margin-bottom:6px;
-background:#f8fafc;
-border-radius:8px;
-border:1px solid #e2e8f0;
-}
-
-.badge{
-padding:4px 8px;
-border-radius:20px;
-font-size:12px;
-font-weight:bold;
-}
-
-.pendente{
-background:#fef3c7;
-}
-
-.entregue{
-background:#dcfce7;
-}
-
-.atual{
-background:#bfdbfe;
-}
-
-.status{
-font-size:14px;
-margin-top:8px;
-color:#64748b;
-}
-
-#reader{
-display:none;
-margin-top:10px;
-}
-
-.relatorio{
-background:#f0fdf4;
-padding:10px;
-border-radius:8px;
-margin-top:10px;
-}
-
 </style>
-
 </head>
-
 <body>
 
-<div class="container">
+<div class="relative w-full h-screen">
 
-<div class="header">
-<h1>🚚 Mover Express Pro</h1>
-<p>Roteirização Inteligente por Menor KM Real</p>
-</div>
+    <!-- MAPA DO GOOGLE -->
+    <div id="mapa"></div>
 
-<div class="grid">
+    <!-- BOTÃO MENU -->
+    <button class="absolute top-4 left-4 w-14 h-14 bg-black/50 rounded-full flex items-center justify-center z-20">
+        <i data-lucide="menu" class="text-white"></i>
+    </button>
 
-<div>
+    <!-- ÍCONES FLUTUANTES -->
+    <button class="icone-flutuante top-24">
+        <i data-lucide="layers" class="text-white"></i>
+    </button>
+    <button class="icone-flutuante top-24 mt-16">
+        <i data-lucide="map" class="text-white"></i>
+    </button>
 
-<div class="card">
+    <!-- NOTIFICAÇÃO ECONOMIA -->
+    <div id="notificacaoEconomia" class="notificacao-economia hidden">
+        <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-sm">✓</div>
+        <span id="textoEconomia">Economizou tempo e distância!</span>
+        <button onclick="fecharNotificacao()" class="ml-4 text-lg">×</button>
+    </div>
 
-<h3>Localização Atual</h3>
+    <!-- PAINEL INFERIOR -->
+    <div class="absolute bottom-0 left-0 right-0 p-4 bg-[#121212] z-20">
+        
+        <!-- BARRA DE PESQUISA COM BOTÃO ADICIONAR -->
+        <div class="barra-pesquisa mb-4">
+            <i data-lucide="search" class="text-gray-400"></i>
+            <input id="inputEndereco" type="text" placeholder="Digite o endereço completo" class="bg-transparent border-none outline-none flex-1 text-white text-lg">
+            <button onclick="adicionarParada()" class="btn-adicionar">+</button>
+        </div>
 
-<button
-class="btn-primary"
-onclick="obterGPS()">
-📍 Capturar GPS
-</button>
+        <!-- RESUMO DA ROTA -->
+        <div class="mb-3">
+            <p class="text-gray-400 text-lg" id="resumoRota">0h00min • 0 paradas • 0.0 km</p>
+            <h2 class="text-2xl font-bold mt-1">Lista de Entregas</h2>
+        </div>
 
-<p id="gpsStatus"
-class="status">
-GPS não capturado
-</p>
+        <!-- LISTA DE ENDEREÇOS ADICIONADOS -->
+        <div id="listaParadas" class="mb-6 max-h-48 overflow-y-auto">
+            <p class="text-center text-gray-500 py-4">Nenhum endereço adicionado ainda</p>
+        </div>
 
-</div>
-
-<div class="card">
-
-<h3>Adicionar Entrega</h3>
-
-<input
-id="endereco"
-placeholder="Rua, Número, Cidade">
-
-<button
-class="btn-success"
-onclick="adicionarEndereco()">
-➕ Adicionar
-</button>
-
-</div>
-
-<div class="card">
-
-<h3>Importar CSV</h3>
-
-<input
-type="file"
-id="csvFile"
-accept=".csv">
-
-<button
-class="btn-dark"
-onclick="importarCSV()">
-📄 Importar
-</button>
+        <!-- BOTÕES DE AÇÃO -->
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="abrirModalReotimizar()" class="btn-cinza">Reotimizar</button>
+            <button onclick="calcularMelhorRota()" class="btn-azul">Calcular Melhor Rota</button>
+        </div>
+    </div>
 
 </div>
 
-<div class="card">
-
-<h3>Scanner QRCode</h3>
-
-<button
-class="btn-primary"
-onclick="abrirScanner()">
-📷 Abrir Scanner
-</button>
-
-<div id="reader"></div>
-
+<!-- MODAL REOTIMIZAR -->
+<div id="modalReotimizar" class="modal-fundo hidden">
+    <div class="modal-conteudo">
+        <h3 class="text-2xl font-bold mb-4">Reotimizar rota</h3>
+        <p class="text-gray-400 mb-6">A reotimização irá calcular a ordem ideal para garantir o <strong>menor tempo possível</strong> de entrega.</p>
+        
+        <button onclick="executarReotimizacao()" class="btn-azul mb-3">Reotimizar rota</button>
+        <button onclick="fecharModalReotimizar()" class="w-full text-center text-blue-400 py-3">Cancelar</button>
+    </div>
 </div>
 
-<div class="card">
+<script>
+lucide.createIcons();
 
-<h3>Otimização</h3>
-
-<button
-class="btn-success"
-onclick="calcularRota()">
-🚀 Calcular Melhor Rota
-</button>
-
-</div>
-
-<div class="card">
-
-<h3>Próxima Entrega</h3>
-
-<div id="proximaEntrega">
-Nenhuma rota calculada
-</div>
-
-<button
-class="btn-primary"
-onclick="concluirEntrega()">
-✅ Concluir Entrega
-</button>
-
-</div>
-
-<div class="card">
-
-<h3>Lista de Entregas</h3>
-
-<ul id="listaEntregas"
-class="lista"></ul>
-
-</div>
-
-<div class="card">
-
-<h3>Relatório</h3>
-
-<div
-id="relatorio"
-class="relatorio">
-
-Total KM: 0
-
-</div>
-
-</div>
-
-</div>
-
-<div>
-
-<div id="map"></div>
-
-</div>
-
-</div>
-
-</div>
-  <script>
-
+// VARIAVEIS GLOBAIS
 let mapa;
-let marcadorGPS;
-
-let localizacaoAtual = null;
-
-let pontosEntrega = [];
-
-let rotaOtimizada = [];
-
-let indiceAtual = 0;
-
-let scanner = null;
-
-mapa = L.map('map').setView([-21.7642,-43.3503],13);
-
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{
-attribution:'© OpenStreetMap'
-}
-).addTo(mapa);
-
-const grupoMarcadores = L.layerGroup().addTo(mapa);
-
-function obterGPS(){
-
-if(!navigator.geolocation){
-
-alert("GPS não suportado");
-
-return;
-
-}
-
-navigator.geolocation.getCurrentPosition(
-
-(pos)=>{
-
-const lat = pos.coords.latitude;
-const lng = pos.coords.longitude;
-
-localizacaoAtual = {
-nome:"Minha Localização",
-lat,
-lng
-};
-
-document.getElementById("gpsStatus").innerHTML =
-`GPS Capturado<br>
-Lat: ${lat.toFixed(6)}<br>
-Lng: ${lng.toFixed(6)}`;
-
-if(marcadorGPS){
-
-mapa.removeLayer(marcadorGPS);
-
-}
-
-marcadorGPS = L.marker([lat,lng])
-.addTo(mapa)
-.bindPopup("Você está aqui");
-
-mapa.setView([lat,lng],15);
-
-},
-
-(err)=>{
-
-alert("Não foi possível obter localização.");
-
-}
-
-);
-
-}
-
-async function buscarCoordenadas(endereco){
-
-try{
-
-const url =
-`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}&limit=1`;
-
-const resposta = await fetch(url);
-
-const dados = await resposta.json();
-
-if(dados.length===0){
-
-return null;
-
-}
-
-return{
-
-nome:endereco,
-
-lat:parseFloat(dados[0].lat),
-
-lng:parseFloat(dados[0].lon)
-
-};
-
-}
-catch(e){
-
-console.log(e);
-
-return null;
-
-}
-
-}
-
-async function adicionarEndereco(){
-
-const campo =
-document.getElementById("endereco");
-
-const endereco =
-campo.value.trim();
-
-if(!endereco){
-
-alert("Digite um endereço.");
-
-return;
-
-}
-
-campo.disabled = true;
-
-campo.value = "Localizando...";
-
-const ponto =
-await buscarCoordenadas(endereco);
-
-campo.disabled = false;
-
-campo.value = "";
-
-if(!ponto){
-
-alert("Endereço não encontrado.");
-
-return;
-
-}
-
-pontosEntrega.push(ponto);
-
-const marcador = L.marker([
-ponto.lat,
-ponto.lng
-]);
-
-marcador
-.bindPopup(ponto.nome)
-.addTo(grupoMarcadores);
-
-renderizarLista();
-
-ajustarMapa();
-
-}
-
-function ajustarMapa(){
-
-const bounds = [];
-
-if(localizacaoAtual){
-
-bounds.push([
-localizacaoAtual.lat,
-localizacaoAtual.lng
-]);
-
-}
-
-pontosEntrega.forEach(p=>{
-
-bounds.push([
-p.lat,
-p.lng
-]);
-
-});
-
-if(bounds.length>0){
-
-mapa.fitBounds(bounds,{
-padding:[50,50]
-});
-
-}
-
-}
-
-function renderizarLista(){
-
-const lista =
-document.getElementById(
-"listaEntregas"
-);
-
-lista.innerHTML = "";
-
-pontosEntrega.forEach((item,index)=>{
-
-lista.innerHTML += `
-<li>
-📦 ${item.nome}
-</li>
-`;
-
-});
-
-}
-
-function abrirScanner(){
-
-const reader =
-document.getElementById("reader");
-
-reader.style.display="block";
-
-if(scanner){
-
-return;
-
-}
-
-scanner = new Html5QrcodeScanner(
-"reader",
-{
-fps:10,
-qrbox:250
-}
-);
-
-scanner.render(
-
-async(texto)=>{
-
-scanner.clear();
-
-reader.style.display="none";
-
-const ponto =
-await buscarCoordenadas(texto);
-
-if(!ponto){
-
-alert(
-"QR não contém endereço válido."
-);
-
-return;
-
-}
-
-pontosEntrega.push(ponto);
-
-L.marker([
-ponto.lat,
-ponto.lng
-])
-.bindPopup(ponto.nome)
-.addTo(grupoMarcadores);
-
-renderizarLista();
-
-ajustarMapa();
-
-},
-
-(error)=>{}
-
-);
-
-}
-
-function abrirGoogleMaps(lat,lng){
-
-window.open(
-`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
-'_blank'
-);
-
-}
-
-function abrirWaze(lat,lng){
-
-window.open(
-`https://waze.com/ul?ll=${lat},${lng}&navigate=yes`,
-'_blank'
-);
-
-}
-
-</script>
-  <script>
-
-let linhaRota = null;
-let kmTotal = 0;
-
-async function calcularRota(){
-
-    if(!localizacaoAtual){
-        alert("Capture o GPS primeiro.");
-        return;
-    }
-
-    if(pontosEntrega.length < 1){
-        alert("Adicione pelo menos uma entrega.");
-        return;
-    }
-
-    try{
-
-        const todosPontos = [
-            localizacaoAtual,
-            ...pontosEntrega
-        ];
-
-        const coordenadas = todosPontos
-            .map(p => `${p.lng},${p.lat}`)
-            .join(";");
-
-        const url =
-        `https://router.project-osrm.org/trip/v1/driving/${coordenadas}?source=first&roundtrip=false&overview=full&geometries=geojson&steps=false`;
-
-        const resposta = await fetch(url);
-        const dados = await resposta.json();
-
-        if(dados.code !== "Ok"){
-            throw new Error("Erro OSRM");
-        }
-
-        rotaOtimizada = [];
-
-        dados.waypoints
-        .sort(
-            (a,b)=>
-            a.waypoint_index-b.waypoint_index
-        )
-        .forEach(wp=>{
-
-            rotaOtimizada.push(
-                todosPontos[wp.trips_index]
-            );
-
+let directionsService;
+let directionsRenderer;
+let geocoder;
+let paradas = [];
+let minhaLat, minhaLng;
+
+// INICIALIZAÇÃO
+function initMap() {
+    if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(pos => {
+            minhaLat = pos.coords.latitude;
+            minhaLng = pos.coords.longitude;
+            iniciarMapa();
+        }, () => {
+            minhaLat = -21.7595;
+            minhaLng = -43.3424;
+            iniciarMapa();
         });
-
-        kmTotal =
-        dados.trips[0].distance / 1000;
-
-        desenharRota(
-            dados.trips[0].geometry
-        );
-
-        indiceAtual = 1;
-
-        atualizarProximaEntrega();
-
-        document.getElementById(
-        "relatorio"
-        ).innerHTML =
-        `
-        Total KM: ${kmTotal.toFixed(2)}
-        <br>
-        Entregas: ${pontosEntrega.length}
-        `;
-
-        renderizarListaOtimizada();
-
     }
-    catch(e){
-
-        console.log(e);
-
-        alert(
-        "Erro ao otimizar rota."
-        );
-
-    }
-
 }
 
-function desenharRota(geojson){
-
-    if(linhaRota){
-
-        mapa.removeLayer(linhaRota);
-
-    }
-
-    linhaRota = L.geoJSON(
-        geojson,
-        {
-            style:{
-                color:"#2563eb",
-                weight:5
-            }
-        }
-    ).addTo(mapa);
-
-    mapa.fitBounds(
-        linhaRota.getBounds()
-    );
-
-}
-
-function renderizarListaOtimizada(){
-
-    const lista =
-    document.getElementById(
-    "listaEntregas"
-    );
-
-    lista.innerHTML="";
-
-    rotaOtimizada.forEach(
-    (ponto,index)=>{
-
-        let classe = "";
-
-        if(index < indiceAtual){
-
-            classe = "entregue";
-
-        }
-        else if(index === indiceAtual){
-
-            classe = "atual";
-
-        }
-        else{
-
-            classe = "pendente";
-
-        }
-
-        if(index === 0){
-
-            return;
-
-        }
-
-        lista.innerHTML +=
-        `
-        <li class="${classe}">
-
-            📦 ${index}
-            - ${ponto.nome}
-
-            <br><br>
-
-            <button
-            onclick="
-            abrirGoogleMaps(
-            ${ponto.lat},
-            ${ponto.lng}
-            )">
-
-            Google Maps
-
-            </button>
-
-            <button
-            onclick="
-            abrirWaze(
-            ${ponto.lat},
-            ${ponto.lng}
-            )">
-
-            Waze
-
-            </button>
-
-        </li>
-        `;
-
+function iniciarMapa(){
+    mapa = new google.maps.Map(document.getElementById("mapa"), {
+        center: { lat: minhaLat, lng: minhaLng },
+        zoom: 13,
+        mapTypeId: 'roadmap',
+        styles: [
+            {elementType: "geometry", stylers: [{color: "#212121"}]},
+            {elementType: "labels.text.stroke", stylers: [{color: "#212121"}]},
+            {elementType: "labels.text.fill", stylers: [{color: "#757575"}]},
+            {featureType: "road", elementType: "geometry", stylers: [{color: "#424242"}]},
+            {featureType: "road", elementType: "labels.text.fill", stylers: [{color: "#bdbdbd"}]}
+        ]
     });
 
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({
+        map: mapa,
+        suppressMarkers: false,
+        polylineOptions: {
+            strokeColor: "#4285F4",
+            strokeWeight: 6,
+            strokeOpacity: 0.9
+        }
+    });
+
+    geocoder = new google.maps.Geocoder();
+
+    // Marcador azul da sua localização
+    new google.maps.Marker({
+        position: { lat: minhaLat, lng: minhaLng },
+        map: mapa,
+        title: "Sua localização",
+        icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: "#4285F4",
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: "white"
+        }
+    });
 }
 
-function atualizarProximaEntrega(){
+// ADICIONAR PARADA
+function adicionarParada(){
+    const endereco = document.getElementById("inputEndereco").value.trim();
+    if(!endereco) return;
 
-    const div =
-    document.getElementById(
-    "proximaEntrega"
-    );
+    geocoder.geocode({ address: endereco }, (results, status) => {
+        if(status === "OK"){
+            const local = results[0].geometry.location;
+            paradas.push({
+                endereco: results[0].formatted_address,
+                lat: local.lat(),
+                lng: local.lng()
+            });
 
-    if(
-    indiceAtual >=
-    rotaOtimizada.length
-    ){
+            atualizarListaParadas();
+            document.getElementById("inputEndereco").value = "";
+        }else{
+            alert("Endereço não encontrado. Tente novamente.");
+        }
+    });
+}
 
-        div.innerHTML =
-        `
-        <h3>
-        🎉 Todas as entregas concluídas
-        </h3>
+// ATUALIZAR LISTA NA TELA
+function atualizarListaParadas(){
+    const lista = document.getElementById("listaParadas");
+    if(paradas.length === 0){
+        lista.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhum endereço adicionado ainda</p>`;
+        return;
+    }
+
+    lista.innerHTML = "";
+    paradas.forEach((p, i) => {
+        const div = document.createElement("div");
+        div.className = "item-parada";
+        div.innerHTML = `
+            <div class="numero-parada">${i+1}</div>
+            <div class="flex-1">
+                <p class="font-bold">${p.endereco.split(',')[0]}</p>
+                <p class="text-sm text-gray-400">${p.endereco.split(',').slice(1).join(', ')}</p>
+            </div>
+            <div class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-lg">A${i+1}</div>
         `;
-
-        return;
-
-    }
-
-    const parada =
-    rotaOtimizada[
-    indiceAtual
-    ];
-
-    div.innerHTML =
-    `
-    <strong>
-    ${parada.nome}
-    </strong>
-
-    <br><br>
-
-    <button
-    onclick="
-    abrirGoogleMaps(
-    ${parada.lat},
-    ${parada.lng}
-    )">
-
-    Navegar
-
-    </button>
-    `;
-
+        lista.appendChild(div);
+    });
 }
 
-function concluirEntrega(){
+// ABRIR MODAL
+function abrirModalReotimizar(){
+    document.getElementById("modalReotimizar").classList.remove("hidden");
+}
+function fecharModalReotimizar(){
+    document.getElementById("modalReotimizar").classList.add("hidden");
+}
 
-    if(
-    indiceAtual >=
-    rotaOtimizada.length
-    ){
+// EXECUTAR OTIMIZAÇÃO
+function executarReotimizacao(){
+    fecharModalReotimizar();
+    document.getElementById("notificacaoEconomia").classList.remove("hidden");
+    calcularMelhorRota();
+}
 
+function fecharNotificacao(){
+    document.getElementById("notificacaoEconomia").classList.add("hidden");
+}
+
+// FUNÇÃO PRINCIPAL: CALCULAR MELHOR ROTA
+function calcularMelhorRota(){
+    if(paradas.length === 0){
+        alert("Adicione pelo menos uma parada primeiro!");
         return;
-
     }
 
-    indiceAtual++;
+    const waypoints = paradas.map(p => ({
+        location: new google.maps.LatLng(p.lat, p.lng),
+        stopover: true
+    }));
 
-    atualizarProximaEntrega();
+    const request = {
+        origin: new google.maps.LatLng(minhaLat, minhaLng),
+        destination: waypoints[waypoints.length - 1].location,
+        waypoints: waypoints.slice(0, -1),
+        optimizeWaypoints: true, // GARANTE O MENOR TEMPO
+        travelMode: google.maps.TravelMode.DRIVING,
+        unitSystem: google.maps.UnitSystem.METRIC
+    };
 
-    renderizarListaOtimizada();
+    directionsService.route(request, function(result, status) {
+        if (status == 'OK') {
+            directionsRenderer.setDirections(result);
+            
+            const rota = result.routes[0];
+            let tempoTotal = 0;
+            let distanciaTotal = 0;
+            
+            rota.legs.forEach(leg => {
+                tempoTotal += leg.duration.value;
+                distanciaTotal += leg.distance.value;
+            });
 
+            const horas = Math.floor(tempoTotal / 3600);
+            const minutos = Math.floor((tempoTotal % 3600) / 60);
+            const km = (distanciaTotal / 1000).toFixed(1);
+
+            document.getElementById("resumoRota").innerText = 
+                `${horas}h${minutos.toString().padStart(2,'0')}min • ${paradas.length} paradas • ${km} km`;
+
+            const ordem = result.routes[0].waypoint_order;
+            paradas = ordem.map(i => paradas[i]);
+            atualizarListaParadas();
+        }
+    });
 }
+
+window.onload = initMap;
 
 </script>
+</body>
+</html>
