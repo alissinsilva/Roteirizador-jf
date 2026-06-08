@@ -46,6 +46,12 @@ body{
     z-index: 1;
 }
 
+/* REMOVE QUALQUER TEXTO OU CAIXA DO PLUGIN */
+.leaflet-control-container,
+.leaflet-routing-container {
+    display: none !important;
+}
+
 .barra-pesquisa{
     background: var(--bg-card);
     border: 1px solid var(--borda);
@@ -150,6 +156,9 @@ body{
     justify-content: center;
     font-weight: bold;
 }
+.numero-parada.atual {
+    background: var(--cor-verde);
+}
 
 .modal-fundo{
     position: fixed;
@@ -217,7 +226,7 @@ body{
             <button onclick="calcularMelhorRota()" class="btn-azul">Calcular Rota</button>
         </div>
 
-        <!-- BOTÃO DE NAVEGAÇÃO E ENTREGA -->
+        <!-- BOTÕES DE NAVEGAÇÃO E ENTREGA -->
         <div class="grid grid-cols-2 gap-3">
             <button onclick="navegarNoGoogleMaps()" class="btn-azul">
                 <i data-lucide="navigation" class="w-5 h-5"></i> Navegar
@@ -281,7 +290,7 @@ function criarMapa(){
             iconSize: [15, 15],
             iconAnchor: [7, 7]
         })
-    }).addTo(mapa).bindPopup("Sua localização");
+    }).addTo(mapa).bindPopup("Você está aqui");
 }
 
 // ADICIONAR PARADA
@@ -314,7 +323,7 @@ function atualizarListaParadas(){
         const div = document.createElement("div");
         div.className = "item-parada";
         div.innerHTML = `
-            <div class="numero-parada" style="${i === indiceAtual ? 'background: #34A853' : ''}">${i+1}</div>
+            <div class="numero-parada ${i === indiceAtual ? 'atual' : ''}">${i+1}</div>
             <div class="flex-1">
                 <p class="font-bold">${p.endereco}</p>
             </div>
@@ -334,12 +343,19 @@ function calcularMelhorRota(){
     if(controleRota) mapa.removeControl(controleRota);
 
     let waypoints = [L.latLng(minhaLat, minhaLng)];
-    paradas.forEach(p => waypoints.push(L.latLng(p.lat, p.lng)));
+    
+    // Adiciona apenas da parada atual em diante
+    for(let i = indiceAtual; i < paradas.length; i++){
+        waypoints.push(L.latLng(paradas[i].lat, paradas[i].lng));
+    }
 
     controleRota = L.Routing.control({
         waypoints: waypoints,
         show: false,
-        lineOptions: { styles: [{color: '#4285F4', weight: 6}] },
+        addWaypoints: false,
+        lineOptions: { 
+            styles: [{color: '#4285F4', weight: 6, opacity: 0.9}] 
+        },
         createMarker: () => null
     }).addTo(mapa);
 
@@ -348,11 +364,8 @@ function calcularMelhorRota(){
         const tempo = Math.round(sum.totalTime / 60);
         const km = (sum.totalDistance / 1000).toFixed(1);
         document.getElementById("resumoRota").innerText = 
-            `${Math.floor(tempo/60)}h${tempo%60}min • ${paradas.length} paradas • ${km} km`;
+            `${Math.floor(tempo/60)}h${tempo%60}min • ${paradas.length - indiceAtual} paradas • ${km} km`;
     });
-
-    indiceAtual = 0;
-    atualizarListaParadas();
 }
 
 // 🔵 ABRIR NO GOOGLE MAPS PARA NAVEGAR
@@ -363,6 +376,7 @@ function navegarNoGoogleMaps(){
     }
 
     const destino = paradas[indiceAtual];
+    // URL DIRETA PARA O GOOGLE MAPS
     const url = `https://www.google.com/maps/dir/?api=1&origin=${minhaLat},${minhaLng}&destination=${destino.lat},${destino.lng}&travelmode=driving`;
     
     window.open(url, '_blank');
@@ -385,13 +399,14 @@ function entregue(){
         return;
     }
 
+    // AVANÇA PARA PRÓXIMA
     indiceAtual++;
     atualizarListaParadas();
     
-    // Atualiza rota no mapa
+    // ATUALIZA ROTA NO MAPA
     calcularMelhorRota();
     
-    // Abre navegação automaticamente para o próximo
+    // ABRE NAVEGAÇÃO AUTOMATICAMENTE
     navegarNoGoogleMaps();
 }
 
@@ -401,7 +416,6 @@ function fecharModalReotimizar(){ document.getElementById("modalReotimizar").cla
 function executarReotimizacao(){ fecharModalReotimizar(); calcularMelhorRota(); }
 
 window.onload = initMap;
-</script>
 </script>
 </body>
 </html>
