@@ -6,7 +6,7 @@
 <title>CircuitPro Professional - Economia & Velocidade</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js"></script>
+<script src="https://unpkg.com/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
 
 <!-- Leaflet para Mapas -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -358,6 +358,7 @@ async function addStop(){
     atualizarTelaPendentes();
     atualizarEstatisticas();
     salvarTudo();
+    alert("✅ Adicionado com sucesso!");
 }
 
 // 🧹 LIMPAR CAMPOS
@@ -471,7 +472,7 @@ async function iniciarRoteirizacao(){
             try{
                 const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(e.endereco)}&countrycodes=BR&limit=1`);
                 const d = await r.json();
-                if(d.length>0){ e.lat=parseFloat(d[0].lat); e.lng=parseFloat(d[0].lon; }
+                if(d.length>0){ e.lat=parseFloat(d[0].lat); e.lng=parseFloat(d[0].lon); }
             }catch(x){}
             if(!e.lat){ e.lat=minhaLat+(Math.random()*0.05-0.025); e.lng=minhaLng+(Math.random()*0.05-0.025); }
         }
@@ -655,7 +656,7 @@ async function capturarTexto(){
             fecharScanner();
             alert("✅ Endereço lido!");
         }else alert("❌ Tente novamente");
-    }catch(e){alert("Erro");}
+    }catch(e){alert("Erro ao processar imagem");}
 }
 
 // INICIALIZAÇÃO
