@@ -2,523 +2,441 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CircuitPro App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CircuitPro Professional - Menor Quilometragem</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js"></script>
 
+<!-- Leaflet CSS para o Mapa -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
 <style>
-    * {
-        touch-action: manipulation;
-    }
-    body {
-        background: #0f172a;
-        color: white;
-        font-family: Arial, Helvetica, sans-serif;
-        overflow-x: hidden;
-    }
-    ::-webkit-scrollbar {
-        width: 4px;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: #334155;
-        border-radius: 10px;
-    }
-    .card {
-        background: #111827;
-        border: 1px solid #1f2937;
-        border-radius: 16px;
-    }
-    button {
-        transition: all 0.2s ease;
-    }
-    button:active {
-        transform: scale(0.97);
-    }
+body{
+    background:#0f172a;
+    color:white;
+    font-family:Arial,Helvetica,sans-serif;
+}
+::-webkit-scrollbar{
+    width:6px;
+}
+::-webkit-scrollbar-thumb{
+    background:#334155;
+    border-radius:20px;
+}
+.card{
+    background:#111827;
+    border:1px solid #1f2937;
+    border-radius:20px;
+}
+#mapa {
+    height: 400px;
+    width: 100%;
+    border-radius: 12px;
+}
 </style>
 </head>
 <body>
 
-<div class="min-h-screen flex flex-col">
+<div class="min-h-screen flex flex-col lg:flex-row">
 
-    <!-- CABEÇALHO -->
-    <header class="bg-slate-900 border-b border-slate-800 p-4 flex items-center gap-3">
-        <div class="bg-indigo-600 p-2 rounded-xl">
-            <i data-lucide="navigation" width="24" height="24"></i>
+<!-- MENU LATERAL -->
+<aside class="w-full lg:w-96 bg-slate-950 border-r border-slate-800 p-5">
+    <div class="flex items-center gap-3 mb-6">
+        <div class="bg-indigo-600 p-3 rounded-xl">
+            <i data-lucide="navigation"></i>
         </div>
         <div>
-            <h1 class="font-black text-lg leading-none">CircuitPro</h1>
+            <h1 class="font-black text-xl">CircuitPro</h1>
             <p class="text-xs text-indigo-400">Menor Quilometragem</p>
         </div>
-    </header>
+    </div>
 
-    <!-- CONTEÚDO PRINCIPAL -->
-    <main class="flex-1 p-4">
-
-        <!-- FORMULÁRIO -->
-        <div class="card p-4 mb-4">
-            <label class="text-xs block mb-1">ID DO PACOTE</label>
-            <input id="packageIdInput" type="text" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 mb-3 text-base" placeholder="#PK-001">
-            
-            <label class="text-xs block mb-1">ENDEREÇO COMPLETO</label>
-            <input id="addressInput" type="text" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 mb-3 text-base" placeholder="Rua, Número, Bairro - Cidade">
-            
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <button onclick="addStop()" class="bg-indigo-600 p-3 rounded-xl font-bold text-base">➕ Adicionar</button>
-                <button onclick="openScanner()" class="bg-slate-800 p-3 rounded-xl font-bold text-base">📸 OCR</button>
-            </div>
-
-            <button onclick="limparCampos()" class="bg-amber-600 hover:bg-amber-700 w-full p-3 rounded-xl font-bold text-base">
-                🧹 Limpar Campos
-            </button>
+    <!-- FORM ADICIONAR -->
+    <div class="card p-4 mb-5">
+        <label class="text-xs block mb-1">ID DO PACOTE</label>
+        <input id="packageIdInput" type="text" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 mb-3" placeholder="#PK-001">
+        <label class="text-xs block mb-1">ENDEREÇO COMPLETO</label>
+        <input id="addressInput" type="text" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 mb-3" placeholder="Rua, Número, Bairro - Cidade">
+        
+        <div class="grid grid-cols-2 gap-2 mb-2">
+            <button onclick="addStop()" class="bg-indigo-600 p-3 rounded-xl font-bold">Adicionar</button>
+            <button onclick="openScanner()" class="bg-slate-800 p-3 rounded-xl">OCR</button>
         </div>
 
-        <!-- LISTA PENDENTES -->
-        <div class="card p-4 mb-4">
-            <h3 class="font-bold text-base mb-3">📋 Entregas Pendentes</h3>
-            <div id="listaPendentes" class="max-h-48 overflow-y-auto space-y-2 mb-3">
-                <div class="text-slate-500 text-sm text-center py-3">Nenhuma entrega adicionada ainda</div>
-            </div>
-            <button onclick="excluirTodosPendentes()" class="w-full bg-red-600 hover:bg-red-700 p-3 rounded-xl font-bold text-base">
-                🗑️ Excluir Todos
-            </button>
-        </div>
-
-        <!-- IMPORTAÇÃO CSV -->
-        <div class="card p-4 mb-4">
-            <h3 class="font-bold text-base mb-3">📁 Importar CSV</h3>
-            <input type="file" id="csvFile" accept=".csv" class="w-full text-sm text-slate-300 mb-3">
-            <button onclick="importCSV()" class="w-full bg-emerald-600 hover:bg-emerald-700 p-3 rounded-xl font-bold text-base">
-                Importar Arquivo
-            </button>
-        </div>
-
-        <!-- ESTATÍSTICAS -->
-        <div class="card p-4 mb-4">
-            <h3 class="font-bold text-base mb-3">📊 Resumo</h3>
-            <div class="grid grid-cols-3 gap-3">
-                <div class="bg-slate-900 p-3 rounded-xl text-center">
-                    <div id="contPendentes" class="text-xl font-black text-yellow-400">0</div>
-                    <div class="text-xs">Pendentes</div>
-                </div>
-                <div class="bg-slate-900 p-3 rounded-xl text-center">
-                    <div id="contEntregues" class="text-xl font-black text-emerald-400">0</div>
-                    <div class="text-xs">Entregues</div>
-                </div>
-                <div class="bg-slate-900 p-3 rounded-xl text-center">
-                    <div id="contTotal" class="text-xl font-black text-indigo-400">0</div>
-                    <div class="text-xs">Total</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- BOTÃO CALCULAR ROTA -->
-        <button onclick="iniciarRoteirizacao()" class="w-full bg-emerald-600 hover:bg-emerald-700 p-4 rounded-xl font-black text-lg mb-4">
-            🚀 CALCULAR MENOR ROTA
+        <button onclick="limparCampos()" class="bg-amber-600 hover:bg-amber-700 w-full p-3 rounded-xl font-bold transition">
+            🧹 Limpar Campos
         </button>
+    </div>
 
-        <!-- LOCALIZAÇÃO ATUAL -->
-        <div class="card p-4 mb-4">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h3 class="font-bold text-base">📍 Sua Posição</h3>
-                    <p id="statusGPS" class="text-sm text-slate-400">Carregando...</p>
-                </div>
-                <button onclick="pegarMinhaLocalizacao()" class="bg-indigo-600 px-4 py-2 rounded-xl font-medium text-sm">
-                    Atualizar
-                </button>
+    <!-- 📋 LISTA DE ENTREGAS ADICIONADAS / PENDENTES -->
+    <div class="card p-4 mb-5">
+        <h3 class="font-bold mb-3 flex items-center gap-2">📋 Entregas Pendentes</h3>
+        <div id="listaPendentes" class="max-h-64 overflow-y-auto space-y-2">
+            <div class="text-slate-500 text-sm text-center py-3">Nenhuma entrega adicionada ainda</div>
+        </div>
+        <!-- 🔘 BOTÃO EXCLUIR TODOS -->
+        <button onclick="excluirTodosPendentes()" class="mt-3 bg-red-600 hover:bg-red-700 w-full p-3 rounded-xl font-bold transition">
+            🗑️ Excluir Todos
+        </button>
+    </div>
+
+    <!-- IMPORTAÇÃO CSV -->
+    <div class="card p-4 mb-5">
+        <h3 class="font-bold mb-3">Importar Lista CSV</h3>
+        <input type="file" id="csvFile" accept=".csv" class="w-full text-sm text-slate-300">
+        <button onclick="importCSV()" class="mt-3 bg-emerald-600 p-3 rounded-xl w-full font-bold">Importar Arquivo</button>
+    </div>
+
+    <!-- ESTATÍSTICAS -->
+    <div class="card p-4 mb-5">
+        <h3 class="font-bold mb-4">Resumo</h3>
+        <div class="grid grid-cols-3 gap-3">
+            <div class="bg-slate-900 p-3 rounded-xl text-center">
+                <div id="contPendentes" class="text-xl font-black text-yellow-400">0</div>
+                <div class="text-xs">Pendentes</div>
+            </div>
+            <div class="bg-slate-900 p-3 rounded-xl text-center">
+                <div id="contEntregues" class="text-xl font-black text-emerald-400">0</div>
+                <div class="text-xs">Entregues</div>
+            </div>
+            <div class="bg-slate-900 p-3 rounded-xl text-center">
+                <div id="contTotal" class="text-xl font-black text-indigo-400">0</div>
+                <div class="text-xs">Total</div>
             </div>
         </div>
+    </div>
 
-        <!-- PAINEL ENTREGA ATUAL -->
-        <div id="painelEntregaAtual" class="card p-4 mb-4 hidden border-2 border-indigo-500/40">
-            <p class="text-xs font-semibold text-indigo-400 uppercase">Próxima entrega:</p>
-            <h2 id="idPacoteAtual" class="text-2xl font-black my-1">-</h2>
-            <p id="enderecoAtual" class="text-base text-slate-200 mb-4">-</p>
+    <button onclick="iniciarRoteirizacao()" class="bg-emerald-600 w-full p-4 rounded-2xl font-black text-lg">🚀 CALCULAR MENOR ROTA</button>
+</aside>
 
-            <div class="grid grid-cols-1 gap-3">
-                <button onclick="marcarComoEntregueEIrProximo()" class="bg-emerald-600 p-3 rounded-xl font-bold text-base">
-                    ✅ Marcar como Entregue
-                </button>
-                <button onclick="ignorarEntrega()" class="bg-red-600 p-3 rounded-xl font-bold text-base">
-                    ⏭️ Ignorar Esta
-                </button>
+<!-- CONTEÚDO PRINCIPAL -->
+<main class="flex-1 p-5">
+    <!-- GPS -->
+    <div class="card p-4 mb-5">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="font-bold text-lg">📍 Sua Posição Atual</h2>
+                <p id="statusGPS" class="text-sm text-slate-400">Clique em atualizar para começar</p>
             </div>
+            <button onclick="pegarMinhaLocalizacao()" class="bg-indigo-600 px-4 py-2 rounded-xl font-medium">Atualizar GPS</button>
+        </div>
+    </div>
+
+    <!-- 🗺️ MAPA INTERATIVO -->
+    <div class="card p-4 mb-6">
+        <h3 class="font-bold mb-3">🗺️ Mapa das Entregas</h3>
+        <div id="mapa"></div>
+    </div>
+
+    <!-- 🚚 ENTREGA ATUAL E AÇÕES -->
+    <div id="painelEntregaAtual" class="card p-6 mb-6 hidden border-2 border-indigo-500/40">
+        <div class="mb-4">
+            <p class="text-xs font-semibold text-indigo-400 uppercase">Você está indo para:</p>
+            <h2 id="idPacoteAtual" class="text-3xl font-black my-1">-</h2>
+            <p id="enderecoAtual" class="text-lg text-slate-200">-</p>
         </div>
 
-        <!-- LISTA DA ROTA -->
-        <div class="card p-4 mb-4">
-            <h3 class="font-bold text-base mb-3">📋 Ordem da Rota <span id="distanciaTotal" class="text-emerald-400 text-sm ml-2"></span></h3>
-            <div id="listaRotaOtimizada" class="space-y-2">
-                <div class="text-slate-500 text-center py-4">Aguardando cálculo...</div>
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-6">
+            <button onclick="abrirNoGoogleMaps()" class="bg-indigo-600 p-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2">🗺️ Abrir Rota</button>
+            <button onclick="marcarComoEntregueEIrProximo()" class="bg-emerald-600 p-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2">✅ Entregue → Próxima</button>
+            <button onclick="ignorarEntrega()" class="bg-red-600 p-4 rounded-xl font-bold text-lg">Ignorar</button>
         </div>
+    </div>
 
-        <!-- LISTA ENTREGUES -->
-        <div class="card p-4 mb-4">
-            <h3 class="font-bold text-base mb-3 text-emerald-400">✅ Já Entregues</h3>
-            <div id="listaEntregues" class="space-y-2">
-                <div class="text-slate-500 text-center py-4">Nenhuma ainda</div>
-            </div>
+    <!-- 📋 ORDEM OTIMIZADA + DISTÂNCIA TOTAL -->
+    <div class="card p-5 mb-6">
+        <h2 class="font-bold text-xl mb-4 flex items-center gap-2">📋 Ordem da Rota <span id="distanciaTotal" class="text-emerald-400 text-lg ml-2"></span></h2>
+        <div id="listaRotaOtimizada" class="space-y-3">
+            <div class="text-slate-500 text-center py-6">Aguardando cálculo...</div>
         </div>
+    </div>
 
-    </main>
+    <!-- ✅ ENTREGUES -->
+    <div class="card p-5">
+        <h2 class="font-bold text-xl mb-4 text-emerald-400">✅ Já Entregues</h2>
+        <div id="listaEntregues" class="space-y-2">
+            <div class="text-slate-500 text-center py-4">Nenhuma entrega concluída</div>
+        </div>
+    </div>
+</main>
 </div>
 
 <!-- MODAL OCR -->
 <div id="modalScanner" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 rounded-2xl p-4 w-full max-w-sm">
+    <div class="bg-slate-900 rounded-2xl p-4 w-full max-w-md">
         <video id="videoCamera" autoplay playsinline class="w-full rounded-xl mb-4"></video>
         <div class="grid grid-cols-2 gap-3">
-            <button onclick="capturarTexto()" class="bg-indigo-600 p-3 rounded-xl font-bold">Capturar</button>
+            <button onclick="capturarTexto()" class="bg-indigo-600 p-3 rounded-xl font-bold">Capturar Endereço</button>
             <button onclick="fecharScanner()" class="bg-red-600 p-3 rounded-xl font-bold">Fechar</button>
         </div>
     </div>
 </div>
-
 <canvas id="telaOculta" class="hidden"></canvas>
 
 <script>
 lucide.createIcons();
 
-let entregasAdicionadas = [];
-let rotaOtimizada = [];
-let entregasConcluidas = [];
+// VARIÁVEIS DE ESTADO DO SISTEMA
+let mapa;
+let marcadores = [];
+let rotaLinha;
+
 let minhaLat = null;
 let minhaLng = null;
-let fluxoCamera = null;
 
-function salvarTudo(){
-    localStorage.setItem("entregas", JSON.stringify(entregasAdicionadas));
-    localStorage.setItem("rota", JSON.stringify(rotaOtimizada));
-    localStorage.setItem("concluidas", JSON.stringify(entregasConcluidas));
+let entregasPendentes = [];
+let rotaOtimizada = [];
+let entregasConcluidas = [];
+let indiceEntregaAtual = 0;
+
+// 1. INICIALIZAR MAPA
+function inicializarMapa() {
+    mapa = L.map('mapa').setView([-22.756, -43.461], 13); // Padrão inicial
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(mapa);
+}
+inicializarMapa();
+
+// 2. CAPTURAR GPS DO MOTORISTA
+function pegarMinhaLocalizacao() {
+    const status = document.getElementById("statusGPS");
+    if (!navigator.geolocation) {
+        status.innerText = "GPS não suportado pelo navegador.";
+        return;
+    }
+    status.innerText = "Buscando satélites...";
+    navigator.geolocation.getCurrentPosition((pos) => {
+        minhaLat = pos.coords.latitude;
+        minhaLng = pos.coords.longitude;
+        status.innerText = `Fixado: ${minhaLat.toFixed(4)}, ${minhaLng.toFixed(4)}`;
+        mapa.setView([minhaLat, minhaLng], 14);
+        
+        // Adiciona marcador do motorista
+        L.marker([minhaLat, minhaLng], {
+            icon: L.divIcon({html: '🚗', className: 'text-2xl', iconSize: [24,24]})
+        }).addTo(mapa).bindPopup("Sua Posição").openPopup();
+    }, () => {
+        status.innerText = "Erro ao obter GPS. Permita o acesso.";
+    });
 }
 
-function carregarDados(){
-    const e = localStorage.getItem("entregas");
-    const r = localStorage.getItem("rota");
-    const c = localStorage.getItem("concluidas");
-    if(e) entregasAdicionadas = JSON.parse(e);
-    if(r) rotaOtimizada = JSON.parse(r);
-    if(c) entregasConcluidas = JSON.parse(c);
-    atualizarTelaPendentes();
-    atualizarEstatisticas();
-    atualizarPainelEntrega();
-    atualizarListaEntregues();
+// 3. ADICIONAR NOVA ENTREGA (GEOCODIFICAÇÃO GRATUITA)
+async function addStop() {
+    const idInput = document.getElementById("packageIdInput");
+    const addrInput = document.getElementById("addressInput");
+    
+    if (!idInput.value || !addrInput.value) {
+        alert("Preencha ID e Endereço!");
+        return;
+    }
+
+    const enderecoBuscado = addrInput.value;
+    addrInput.placeholder = "🔍 Buscando coordenadas...";
+
+    try {
+        // Consome a API pública do Nominatim para achar Lat/Lng do texto
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(enderecoBuscado)}&limit=1`;
+        const response = await fetch(url, { headers: { 'User-Agent': 'CircuitProApp' } });
+        const dados = await response.json();
+
+        if (dados.length === 0) {
+            alert("Endereço não localizado no mapa. Tente ser mais específico.");
+            addrInput.placeholder = "Rua, Número, Bairro - Cidade";
+            return;
+        }
+
+        const novaEntrega = {
+            id: idInput.value,
+            endereco: dados[0].display_name,
+            lat: parseFloat(dados[0].lat),
+            lng: parseFloat(dados[0].lon)
+        };
+
+        entregasPendentes.push(novaEntrega);
+        atualizarPaineisInterface();
+        
+        idInput.value = "";
+        addrInput.value = "";
+        addrInput.placeholder = "Rua, Número, Bairro - Cidade";
+    } catch (erro) {
+        console.error(erro);
+        alert("Erro na busca do endereço.");
+    }
 }
 
-function addStop(){
-    const id = document.getElementById("packageIdInput").value.trim();
-    const endereco = document.getElementById("addressInput").value.trim();
+// 4. CHAMADA AO MOTOR DE ROTAS OSRM
+async function iniciarRoteirizacao() {
+    if (!minhaLat || !minhaLng) {
+        alert("⚠️ Por favor, capture sua posição GPS primeiro!");
+        return;
+    }
+    if (entregasPendentes.length === 0) {
+        alert("⚠️ Adicione pelo menos 1 entrega na lista.");
+        return;
+    }
 
-    if(!endereco) return alert("⚠️ Digite o endereço!");
-    const idFinal = id || `#PK-${Math.floor(Math.random()*999999)}`;
-
-    entregasAdicionadas.push({
-        idUnico: Date.now().toString(),
-        idPacote: idFinal,
-        endereco: endereco,
-        lat: null,
-        lng: null
+    // Montamos a cadeia: Motorista -> Ponto 1 -> Ponto 2 -> Ponto N
+    let stringCoordenadas = `${minhaLng},${minhaLat}`; 
+    entregasPendentes.forEach(p => {
+        stringCoordenadas += `;${p.lng},${p.lat}`;
     });
 
-    document.getElementById("packageIdInput").value = "";
-    document.getElementById("addressInput").value = "";
+    const urlOSRM = `https://router.project-osrm.org/route/v1/driving/${stringCoordenadas}?overview=full&geometries=geojson`;
 
-    atualizarTelaPendentes();
-    atualizarEstatisticas();
-    salvarTudo();
+    try {
+        const resposta = await fetch(urlOSRM);
+        const resultado = await resposta.json();
+
+        if (resultado.code !== "Ok") {
+            alert("Não foi possível traçar rota entre estes pontos.");
+            return;
+        }
+
+        // Desenha a linha no mapa Leaflet
+        if (rotaLinha) mapa.removeLayer(rotaLinha);
+        const coordenadasGeometria = resultado.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        
+        rotaLinha = L.polyline(coordenadasGeometria, {color: '#6366f1', weight: 5, opacity: 0.8}).addTo(mapa);
+        mapa.fitBounds(rotaLinha.getBounds());
+
+        // Atualiza a distância total (OSRM entrega em metros, convertemos para KM)
+        const distanciaKm = (resultado.routes[0].distance / 1000).toFixed(1);
+        document.getElementById("distanciaTotal").innerText = `(${distanciaKm} km)`;
+
+        // Define a ordem a ser seguida
+        rotaOtimizada = [...entregasPendentes];
+        indiceEntregaAtual = 0;
+        
+        renderizarRotaOtimizadaSugerida();
+        abrirPainelEntregaAtual();
+    } catch (erro) {
+        console.error(erro);
+        alert("Erro ao conectar com o servidor do OSRM.");
+    }
 }
 
+// 5. ATUALIZADORES DE INTERFACE (HTML DINÂMICO)
+function atualizarPaineisInterface() {
+    const lista = document.getElementById("listaPendentes");
+    if (entregasPendentes.length === 0) {
+        lista.innerHTML = `<div class="text-slate-500 text-sm text-center py-3">Nenhuma entrega adicionada ainda</div>`;
+    } else {
+        lista.innerHTML = entregasPendentes.map((p, i) => `
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex justify-between items-center text-sm">
+                <div>
+                    <span class="font-bold text-indigo-400">${p.id}</span>
+                    <p class="text-xs text-slate-400 truncate max-w-[180px]">${p.endereco}</p>
+                </div>
+                <button onclick="removerPendente(${i})" class="text-red-500 hover:text-red-400 font-bold">X</button>
+            </div>
+        `).join('');
+    }
+    
+    // Atualiza contadores do card "Resumo"
+    document.getElementById("contPendentes").innerText = entregasPendentes.length;
+    document.getElementById("contEntregues").innerText = entregasConcluidas.length;
+    document.getElementById("contTotal").innerText = entregasPendentes.length + entregasConcluidas.length;
+}
+
+function renderizarRotaOtimizadaSugerida() {
+    const lista = document.getElementById("listaRotaOtimizada");
+    lista.innerHTML = rotaOtimizada.map((p, idx) => {
+        const estaConcluida = idx < indiceEntregaAtual;
+        const eAAfrente = idx === indiceEntregaAtual;
+        
+        return `
+            <div class="p-3 rounded-xl flex items-center gap-3 ${estaConcluida ? 'bg-emerald-950/20 border border-emerald-900/40 text-slate-500' : eAAfrente ? 'bg-indigo-600/20 border-2 border-indigo-500' : 'bg-slate-900 border border-slate-800'}">
+                <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${estaConcluida ? 'bg-emerald-900 text-emerald-400' : eAAfrente ? 'bg-indigo-600 text-white animate-pulse' : 'bg-slate-800 text-slate-400'}">
+                    ${idx + 1}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-sm truncate">${p.id} ${estaConcluida ? '✓' : ''}</p>
+                    <p class="text-xs truncate ${estaConcluida ? 'text-slate-600' : 'text-slate-400'}">${p.endereco}</p>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function abrirPainelEntregaAtual() {
+    const painel = document.getElementById("painelEntregaAtual");
+    if (indiceEntregaAtual < rotaOtimizada.length) {
+        painel.classList.remove("hidden");
+        const atual = rotaOtimizada[indiceEntregaAtual];
+        document.getElementById("idPacoteAtual").innerText = atual.id;
+        document.getElementById("enderecoAtual").innerText = atual.endereco;
+    } else {
+        painel.classList.add("hidden");
+        alert("🎉 Excelente! Todas as entregas do circuito foram concluídas!");
+    }
+}
+
+// 6. AÇÕES DO MOTORISTA NA VIAGEM
+function abrirNoGoogleMaps() {
+    if (indiceEntregaAtual >= rotaOtimizada.length) return;
+    const atual = rotaOtimizada[indiceEntregaAtual];
+    // Dispara link externo nativo para navegação
+    window.open(`https://www.google.com/maps/search/?api=1&query=${atual.lat},${atual.lng}`, '_blank');
+}
+
+function marcarComoEntregueEIrProximo() {
+    if (indiceEntregaAtual < rotaOtimizada.length) {
+        const concluida = rotaOtimizada[indiceEntregaAtual];
+        entregasConcluidas.push(concluida);
+        
+        // Remove da lista de pendentes originais
+        entregasPendentes = entregasPendentes.filter(p => p.id !== concluida.id);
+        
+        indiceEntregaAtual++;
+        
+        // Atualiza UI de Concluídos
+        const listaEnc = document.getElementById("listaEntregues");
+        listaEnc.innerHTML = entregasConcluidas.map(p => `
+            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 text-sm text-slate-400 flex items-center justify-between">
+                <span>🟢 <b>${p.id}</b> - ${p.endereco.substring(0, 35)}...</span>
+            </div>
+        `).join('');
+
+        atualizarPaineisInterface();
+        renderizarRotaOtimizadaSugerida();
+        abrirPainelEntregaAtual();
+    }
+}
+
+function ignorarEntrega() {
+    if(confirm("Deseja pular esta entrega temporariamente?")) {
+        indiceEntregaAtual++;
+        renderizarRotaOtimizadaSugerida();
+        abrirPainelEntregaAtual();
+    }
+}
+
+// 7. AUXILIARES DE LIMPEZA E EXCLUSÃO
+function removerPendente(index) {
+    entregasPendentes.splice(index, 1);
+    atualizarPaineisInterface();
+}
+
+function excluirTodosPendentes() {
+    entregasPendentes = [];
+    rotaOtimizada = [];
+    if (rotaLinha) mapa.removeLayer(rotaLinha);
+    document.getElementById("distanciaTotal").innerText = "";
+    document.getElementById("listaRotaOtimizada").innerHTML = `<div class="text-slate-500 text-center py-6">Aguardando cálculo...</div>`;
+    document.getElementById("painelEntregaAtual").classList.add("hidden");
+    atualizarPaineisInterface();
+}
+
+// 🧹 LIMPAR CAMPOS
 function limparCampos(){
     document.getElementById("packageIdInput").value = "";
     document.getElementById("addressInput").value = "";
 }
 
-function atualizarTelaPendentes(){
-    const div = document.getElementById("listaPendentes");
-    if(entregasAdicionadas.length === 0){
-        div.innerHTML = `<div class="text-slate-500 text-sm text-center py-3">Nenhuma entrega adicionada ainda</div>`;
-        return;
-    }
-    div.innerHTML = "";
-    entregasAdicionadas.forEach((entrega)=>{
-        const el = document.createElement("div");
-        el.className = "bg-slate-900 p-3 rounded-xl border border-slate-800 flex justify-between items-center";
-        el.innerHTML = `
-            <div class="flex-1 mr-2">
-                <div class="font-bold text-indigo-400 text-sm">${entrega.idPacote}</div>
-                <div class="text-xs text-slate-300">${entrega.endereco.substring(0,30)}...</div>
-            </div>
-            <button onclick="removerEntrega('${entrega.idUnico}')" class="bg-red-700/60 w-8 h-8 rounded-lg flex items-center justify-center text-lg">×</button>
-        `;
-        div.appendChild(el);
-    });
-}
-
-function removerEntrega(id){
-    entregasAdicionadas = entregasAdicionadas.filter(e=>e.idUnico !== id);
-    atualizarTelaPendentes();
-    atualizarEstatisticas();
-    salvarTudo();
-}
-
-function excluirTodosPendentes(){
-    if(entregasAdicionadas.length === 0){
-        alert("ℹ️ Não há endereços para excluir.");
-        return;
-    }
-    if(confirm("⚠️ Tem certeza que deseja excluir TODOS?\nEsta ação não pode ser desfeita!")){
-        entregasAdicionadas = [];
-        atualizarTelaPendentes();
-        atualizarEstatisticas();
-        salvarTudo();
-        alert("✅ Todos removidos.");
-    }
-}
-
-function atualizarEstatisticas(){
-    document.getElementById("contPendentes").innerText = entregasAdicionadas.length;
-    document.getElementById("contEntregues").innerText = entregasConcluidas.length;
-    document.getElementById("contTotal").innerText = entregasAdicionadas.length + entregasConcluidas.length;
-}
-
-function pegarMinhaLocalizacao(){
-    const status = document.getElementById("statusGPS");
-    status.innerText = "⏳ Obtendo localização...";
-    if(!navigator.geolocation){
-        status.innerText = "❌ GPS não suportado";
-        return;
-    }
-    navigator.geolocation.getCurrentPosition(
-        pos=>{
-            minhaLat = pos.coords.latitude;
-            minhaLng = pos.coords.longitude;
-            status.innerHTML = `✅ Lat: ${minhaLat.toFixed(5)} <br> Lng: ${minhaLng.toFixed(5)}`;
-        },
-        erro=>{
-            status.innerText = "❌ Não foi possível obter localização";
-            minhaLat = -21.7595; minhaLng = -43.3424;
-        },
-        {enableHighAccuracy:true, timeout:12000}
-    );
-}
-
-async function pegarCoordenadas(endereco){
-    try{
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}&countrycodes=BR&limit=1`);
-        const dados = await res.json();
-        if(dados.length>0){
-            return {lat:parseFloat(dados[0].lat), lng:parseFloat(dados[0].lon)};
-        }
-    }catch(e){console.error(e)}
-    return null;
-}
-
-function calcularDistanciaKM(lat1, lng1, lat2, lng2){
-    const R = 6371;
-    const dLat = (lat2 - lat1)*Math.PI/180;
-    const dLng = (lng2 - lng1)*Math.PI/180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-function calcularDistanciaTotal(sequencia, pontoInicial){
-    let total = 0;
-    let atual = pontoInicial;
-    for(let parada of sequencia){
-        total += calcularDistanciaKM(atual.lat, atual.lng, parada.lat, parada.lng);
-        atual = parada;
-    }
-    return total;
-}
-
-function permutar(arr){
-    if(arr.length===0) return [];
-    if(arr.length===1) return [arr];
-    let resultado = [];
-    for(let i=0; i<arr.length; i++){
-        const atual = arr[i];
-        const resto = arr.slice(0,i).concat(arr.slice(i+1));
-        const permRest = permutar(resto);
-        for(let p of permRest){
-            resultado.push([atual].concat(p));
-        }
-    }
-    return resultado;
-}
-
-async function iniciarRoteirizacao(){
-    if(entregasAdicionadas.length===0) return alert("⚠️ Adicione entregas primeiro!");
-    if(!minhaLat || !minhaLng) return alert("⚠️ Atualize sua localização primeiro!");
-
-    alert("⏳ Calculando melhor rota...");
-
-    for(let e of entregasAdicionadas){
-        if(!e.lat || !e.lng){
-            const coord = await pegarCoordenadas(e.endereco);
-            if(coord){ e.lat = coord.lat; e.lng = coord.lng; }
-            else{ e.lat = minhaLat+(Math.random()*0.08-0.04); e.lng=minhaLng+(Math.random()*0.08-0.04); }
-        }
-    }
-
-    const lista = [...entregasAdicionadas];
-    const origem = {lat:minhaLat, lng:minhaLng};
-
-    if(lista.length <= 8){
-        const todasOrdens = permutar(lista);
-        let menorDist = Infinity;
-        let melhorOrdem = lista;
-
-        for(let ordem of todasOrdens){
-            const dist = calcularDistanciaTotal(ordem, origem);
-            if(dist < menorDist){
-                menorDist = dist;
-                melhorOrdem = ordem;
-            }
-        }
-        rotaOtimizada = melhorOrdem;
-        document.getElementById("distanciaTotal").innerText = `| Total: ${menorDist.toFixed(1)} km`;
-    }
-    else{
-        let atual = origem;
-        let naoVisitadas = [...lista];
-        rotaOtimizada = [];
-
-        while(naoVisitadas.length>0){
-            let proxIdx = 0;
-            let menor = Infinity;
-            for(let i=0; i<naoVisitadas.length; i++){
-                const d = calcularDistanciaKM(atual.lat, atual.lng, naoVisitadas[i].lat, naoVisitadas[i].lng);
-                if(d < menor){ menor = d; proxIdx = i; }
-            }
-            const p = naoVisitadas.splice(proxIdx,1)[0];
-            rotaOtimizada.push(p);
-            atual = p;
-        }
-
-        let melhorou;
-        do{
-            melhorou = false;
-            for(let i=0; i<rotaOtimizada.length-2; i++){
-                for(let j=i+2; j<rotaOtimizada.length; j++){
-                    const dAntes = calcularDistanciaKM(
-                        i===0 ? origem : rotaOtimizada[i-1], rotaOtimizada[i]
-                    ) + calcularDistanciaKM(rotaOtimizada[j], j===rotaOtimizada.length-1 ? rotaOtimizada[j] : rotaOtimizada[j+1]);
-
-                    const dDepois = calcularDistanciaKM(
-                        i===0 ? origem : rotaOtimizada[i-1], rotaOtimizada[j]
-                    ) + calcularDistanciaKM(rotaOtimizada[i], j===rotaOtimizada.length-1 ? rotaOtimizada[j] : rotaOtimizada[j+1]);
-
-                    if(dDepois < dAntes){
-                        rotaOtimizada = [
-                            ...rotaOtimizada.slice(0,i),
-                            ...rotaOtimizada.slice(i,j+1).reverse(),
-                            ...rotaOtimizada.slice(j+1)
-                        ];
-                        melhorou = true;
-                    }
-                }
-            }
-        }while(melhorou);
-
-        const totalFinal = calcularDistanciaTotal(rotaOtimizada, origem);
-        document.getElementById("distanciaTotal").innerText = `| Total: ${totalFinal.toFixed(1)} km`;
-    }
-
-    entregasAdicionadas = [];
-    atualizarTelaPendentes();
-    atualizarListaRota();
-    atualizarPainelEntrega();
-    salvarTudo();
-    alert("✅ Rota pronta!");
-}
-
-function atualizarListaRota(){
-    const div = document.getElementById("listaRotaOtimizada");
-    if(rotaOtimizada.length===0){
-        div.innerHTML = `<div class="text-slate-500 text-center py-4">Aguardando cálculo...</div>`;
-        return;
-    }
-    div.innerHTML="";
-    rotaOtimizada.forEach((e,i)=>{
-        const el = document.createElement("div");
-        el.className = `p-3 rounded-xl border flex gap-3 items-center ${i===0 ? "bg-indigo-900/40 border-indigo-500" : "bg-slate-900 border-slate-700"}`;
-        el.innerHTML = `
-            <div class="w-8 h-8 rounded-full bg-indigo-600 font-bold flex items-center justify-center text-sm">${i+1}</div>
-            <div class="flex-1">
-                <div class="font-bold text-sm">${e.idPacote}</div>
-                <div class="text-xs text-slate-300">${e.endereco}</div>
-            </div>
-        `;
-        div.appendChild(el);
-    });
-}
-
-function atualizarPainelEntrega(){
-    const painel = document.getElementById("painelEntregaAtual");
-
-    if(rotaOtimizada.length===0){
-        painel.classList.add("hidden");
-        return;
-    }
-    painel.classList.remove("hidden");
-
-    const atual = rotaOtimizada[0];
-    document.getElementById("idPacoteAtual").innerText = atual.idPacote;
-    document.getElementById("enderecoAtual").innerText = atual.endereco;
-
-    atualizarListaRota();
-}
-
-function marcarComoEntregueEIrProximo(){
-    if(rotaOtimizada.length===0) return;
-
-    const concluida = rotaOtimizada.shift();
-    entregasConcluidas.push(concluida);
-
-    atualizarPainelEntrega();
-    atualizarListaEntregues();
-    atualizarEstatisticas();
-    salvarTudo();
-
-    if(rotaOtimizada.length === 0){
-        alert("🏁 Todas as entregas finalizadas!");
-        entregasAdicionadas = [];
-        rotaOtimizada = [];
-        entregasConcluidas = [];
-        localStorage.clear();
-        atualizarTelaPendentes();
-        atualizarListaRota();
-        atualizarListaEntregues();
-        atualizarEstatisticas();
-        atualizarPainelEntrega();
-    }
-}
-
-function ignorarEntrega(){
-    if(rotaOtimizada.length===0) return;
-    rotaOtimizada.shift();
-    atualizarPainelEntrega();
-    salvarTudo();
-}
-
-function atualizarListaEntregues(){
-    const div = document.getElementById("listaEntregues");
-    if(entregasConcluidas.length===0){
-        div.innerHTML = `<div class="text-slate-500 text-center py-4">Nenhuma entrega concluída</div>`;
-        return;
-    }
-    div.innerHTML="";
-    entregasConcluidas.forEach(e=>{
-        const el = document.createElement("div");
-        el.className = "bg-emerald-950/40 p-3 rounded-xl border border-emerald-700/40";
-        el.innerHTML = `<div class="font-bold text-emerald-400 text-sm">${e.idPacote}</div><div class="text-xs">${e.endereco}</div>`;
-        div.appendChild(el);
-    });
-}
-
+// 📤 CSV
 function importCSV(){
     const arquivo = document.getElementById("csvFile").files[0];
     if(!arquivo) return alert("Escolha um arquivo .csv");
@@ -527,21 +445,21 @@ function importCSV(){
         ev.target.result.split("\n").forEach(linha=>{
             const col = linha.split(",");
             if(col.length>=2 && col[0].trim()){
-                entregasAdicionadas.push({
-                    idUnico: Date.now()+Math.random(),
-                    idPacote: col[0].trim(),
+                entregasPendentes.push({
+                    id: col[0].trim(),
                     endereco: col[1].trim(),
                     lat:null, lng:null
                 });
             }
         });
-        atualizarTelaPendentes();
-        atualizarEstatisticas();
-        salvarTudo();
+        atualizarPaineisInterface();
         alert("✅ Importado!");
     };
     ler.readAsText(arquivo,"UTF-8");
 }
+
+// 📸 OCR
+let fluxoCamera = null;
 
 async function openScanner(){
     try{
@@ -573,7 +491,6 @@ async function capturarTexto(){
 
 window.onload = ()=>{
     pegarMinhaLocalizacao();
-    carregarDados();
 };
 </script>
 </body>
