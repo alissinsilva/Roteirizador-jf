@@ -1,833 +1,580 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Roteirizador Pro</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CircuitPro App</title>
 <script src="https://cdn.tailwindcss.com"></script>
-
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js"></script>
 
 <style>
-
-:root{
---bg:#121212;
---card:#1e1e1e;
---azul:#4285F4;
---verde:#34A853;
---borda:#383838;
-}
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-}
-
-body{
-background:var(--bg);
-color:white;
-font-family:Arial,sans-serif;
-overflow:hidden;
-}
-
-#mapa{
-position:absolute;
-top:0;
-left:0;
-width:100%;
-height:55%;
-z-index:1;
-}
-
-.leaflet-routing-container{
-display:none !important;
-}
-
-.painel{
-position:absolute;
-bottom:0;
-left:0;
-right:0;
-height:45%;
-background:#121212;
-padding:15px;
-z-index:1000;
-overflow:auto;
-}
-
-.barra{
-display:flex;
-gap:10px;
-margin-bottom:10px;
-}
-
-.barra input{
-flex:1;
-padding:12px;
-background:#1e1e1e;
-border:1px solid #333;
-border-radius:10px;
-color:white;
-}
-
-.btn-add{
-width:50px;
-background:var(--azul);
-border:none;
-color:white;
-border-radius:10px;
-font-size:22px;
-cursor:pointer;
-}
-
-.lista{
-max-height:180px;
-overflow:auto;
-margin-top:10px;
-}
-
-.item{
-display:flex;
-align-items:center;
-gap:10px;
-padding:10px;
-border-bottom:1px solid #333;
-}
-
-.numero{
-width:28px;
-height:28px;
-border-radius:50%;
-background:var(--azul);
-display:flex;
-justify-content:center;
-align-items:center;
-font-weight:bold;
-}
-
-.numero.atual{
-background:var(--verde);
-}
-
-.botoes{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
-margin-top:15px;
-}
-
-button{
-padding:12px;
-border:none;
-border-radius:10px;
-cursor:pointer;
-font-weight:bold;
-}
-
-.azul{
-background:var(--azul);
-color:white;
-}
-
-.verde{
-background:var(--verde);
-color:white;
-}
-
-.cinza{
-background:#222;
-color:white;
-}
-
-.resumo{
-margin-top:10px;
-font-size:18px;
-font-weight:bold;
-}
-
+    * {
+        touch-action: manipulation;
+    }
+    body {
+        background: #0f172a;
+        color: white;
+        font-family: Arial, Helvetica, sans-serif;
+        overflow-x: hidden;
+    }
+    ::-webkit-scrollbar {
+        width: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 10px;
+    }
+    .card {
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 16px;
+    }
+    button {
+        transition: all 0.2s ease;
+    }
+    button:active {
+        transform: scale(0.97);
+    }
 </style>
-
 </head>
-
 <body>
 
-<div id="mapa"></div>
-
-<div class="painel">
-
-<div class="barra">
-
-<input
-id="inputEndereco"
-placeholder="Digite o endereço completo">
-
-<button
-class="btn-add"
-onclick="adicionarParada()">
-+
-</button>
-
-</div>
-
-<div
-class="resumo"
-id="resumoRota">
-
-0h00min • 0 paradas • 0 km
-
-</div>
-
-<div
-class="lista"
-id="listaParadas">
-
-Nenhuma entrega pendente
-
-</div>
-
-<div class="botoes">
-
-<button
-class="azul"
-onclick="calcularMelhorRota()">
-
-Otimizar Rota
-
-</button>
-
-<button
-class="cinza"
-onclick="navegarNoGoogleMaps()">
-
-Navegar
-
-</button>
-
-</div>
-
-<div class="botoes">
-
-<button
-class="verde"
-onclick="entregue()">
-
-✅ Entregue / Próxima
-
-</button>
-
-<button
-class="azul"
-onclick="limparTudo()">
-
-🗑 Limpar
-
-</button>
-
-</div>
-
-</div>
-<script>
-
-let mapa;
-let controleRota;
-
-let minhaLat = -21.7595;
-let minhaLng = -43.3424;
-
-let paradas = [];
-
-
-// ==========================
-// INICIAR GPS
-// ==========================
-
-window.onload = () => {
-
-    if(navigator.geolocation){
-
-        navigator.geolocation.getCurrentPosition(
-
-            pos => {
-
-                minhaLat = pos.coords.latitude;
-                minhaLng = pos.coords.longitude;
-
-                iniciarMapa();
-
-            },
-
-            erro => {
-
-                console.log(erro);
-
-                iniciarMapa();
-
-            },
-
-            {
-                enableHighAccuracy:true,
-                timeout:10000
-            }
-
-        );
-
-    }else{
-
-        iniciarMapa();
-
-    }
-
-};
-
-
-// ==========================
-// MAPA
-// ==========================
-
-function iniciarMapa(){
-
-    mapa = L.map("mapa").setView(
-        [minhaLat,minhaLng],
-        14
-    );
-
-    L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-            attribution:"© OpenStreetMap"
-        }
-    ).addTo(mapa);
-
-    L.marker(
-        [minhaLat,minhaLng]
-    )
-    .addTo(mapa)
-    .bindPopup("Minha localização");
-
-}
-
-
-// ==========================
-// GEOCODIFICAR ENDEREÇO
-// ==========================
-
-async function geocodificarEndereco(endereco){
-
-    try{
-
-        const resposta = await fetch(
-
-            `https://nominatim.openstreetmap.org/search?format=json&countrycodes=br&addressdetails=1&limit=1&q=${encodeURIComponent(endereco)}`
-
-        );
-
-        const dados = await resposta.json();
-
-        if(!dados.length){
-
-            return null;
-
-        }
-
-        return {
-
-            lat: parseFloat(dados[0].lat),
-
-            lng: parseFloat(dados[0].lon),
-
-            endereco:
-            dados[0].display_name
-
-        };
-
-    }
-
-    catch(erro){
-
-        console.error(erro);
-
-        return null;
-
-    }
-
-}
-
-
-// ==========================
-// ADICIONAR PARADA
-// ==========================
-
-async function adicionarParada(){
-
-    const campo =
-    document.getElementById(
-        "inputEndereco"
-    );
-
-    const endereco =
-    campo.value.trim();
-
-    if(!endereco){
-
-        alert(
-            "Digite um endereço."
-        );
-
-        return;
-
-    }
-
-    campo.value = "";
-
-    const local =
-    await geocodificarEndereco(
-        endereco
-    );
-
-    if(!local){
-
-        alert(
-            "Endereço não encontrado."
-        );
-
-        return;
-
-    }
-
-    paradas.push({
-
-        endereco: local.endereco,
-
-        lat: local.lat,
-
-        lng: local.lng
-
-    });
-
-    atualizarListaParadas();
-
-}
-
-
-// ==========================
-// LISTA
-// ==========================
-
-function atualizarListaParadas(){
-
-    const lista =
-    document.getElementById(
-        "listaParadas"
-    );
-
-    if(paradas.length === 0){
-
-        lista.innerHTML =
-        "Nenhuma entrega pendente";
-
-        return;
-
-    }
-
-    lista.innerHTML = "";
-
-    paradas.forEach(
-
-        (p,index)=>{
-
-            lista.innerHTML += `
-
-            <div class="item">
-
-                <div class="numero">
-
-                    ${index+1}
-
-                </div>
-
-                <div>
-
-                    ${p.endereco}
-
-                </div>
-
+<div class="min-h-screen flex flex-col">
+
+    <!-- CABEÇALHO -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 flex items-center gap-3">
+        <div class="bg-indigo-600 p-2 rounded-xl">
+            <i data-lucide="navigation" width="24" height="24"></i>
+        </div>
+        <div>
+            <h1 class="font-black text-lg leading-none">CircuitPro</h1>
+            <p class="text-xs text-indigo-400">Menor Quilometragem</p>
+        </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 p-4">
+
+        <!-- FORMULÁRIO -->
+        <div class="card p-4 mb-4">
+            <label class="text-xs block mb-1">ID DO PACOTE</label>
+            <input id="packageIdInput" type="text" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 mb-3 text-base" placeholder="#PK-001">
+            
+            <label class="text-xs block mb-1">ENDEREÇO COMPLETO</label>
+            <input id="addressInput" type="text" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 mb-3 text-base" placeholder="Rua, Número, Bairro - Cidade">
+            
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <button onclick="addStop()" class="bg-indigo-600 p-3 rounded-xl font-bold text-base">➕ Adicionar</button>
+                <button onclick="openScanner()" class="bg-slate-800 p-3 rounded-xl font-bold text-base">📸 OCR</button>
             </div>
 
-            `;
+            <button onclick="limparCampos()" class="bg-amber-600 hover:bg-amber-700 w-full p-3 rounded-xl font-bold text-base">
+                🧹 Limpar Campos
+            </button>
+        </div>
 
-        }
+        <!-- LISTA PENDENTES -->
+        <div class="card p-4 mb-4">
+            <h3 class="font-bold text-base mb-3">📋 Entregas Pendentes</h3>
+            <div id="listaPendentes" class="max-h-48 overflow-y-auto space-y-2 mb-3">
+                <div class="text-slate-500 text-sm text-center py-3">Nenhuma entrega adicionada ainda</div>
+            </div>
+            <button onclick="excluirTodosPendentes()" class="w-full bg-red-600 hover:bg-red-700 p-3 rounded-xl font-bold text-base">
+                🗑️ Excluir Todos
+            </button>
+        </div>
 
+        <!-- IMPORTAÇÃO CSV -->
+        <div class="card p-4 mb-4">
+            <h3 class="font-bold text-base mb-3">📁 Importar CSV</h3>
+            <input type="file" id="csvFile" accept=".csv" class="w-full text-sm text-slate-300 mb-3">
+            <button onclick="importCSV()" class="w-full bg-emerald-600 hover:bg-emerald-700 p-3 rounded-xl font-bold text-base">
+                Importar Arquivo
+            </button>
+        </div>
+
+        <!-- ESTATÍSTICAS -->
+        <div class="card p-4 mb-4">
+            <h3 class="font-bold text-base mb-3">📊 Resumo</h3>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-slate-900 p-3 rounded-xl text-center">
+                    <div id="contPendentes" class="text-xl font-black text-yellow-400">0</div>
+                    <div class="text-xs">Pendentes</div>
+                </div>
+                <div class="bg-slate-900 p-3 rounded-xl text-center">
+                    <div id="contEntregues" class="text-xl font-black text-emerald-400">0</div>
+                    <div class="text-xs">Entregues</div>
+                </div>
+                <div class="bg-slate-900 p-3 rounded-xl text-center">
+                    <div id="contTotal" class="text-xl font-black text-indigo-400">0</div>
+                    <div class="text-xs">Total</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTÃO CALCULAR ROTA -->
+        <button onclick="iniciarRoteirizacao()" class="w-full bg-emerald-600 hover:bg-emerald-700 p-4 rounded-xl font-black text-lg mb-4">
+            🚀 CALCULAR MENOR ROTA
+        </button>
+
+        <!-- LOCALIZAÇÃO ATUAL -->
+        <div class="card p-4 mb-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-base">📍 Sua Posição</h3>
+                    <p id="statusGPS" class="text-sm text-slate-400">Carregando...</p>
+                </div>
+                <button onclick="pegarMinhaLocalizacao()" class="bg-indigo-600 px-4 py-2 rounded-xl font-medium text-sm">
+                    Atualizar
+                </button>
+            </div>
+        </div>
+
+        <!-- PAINEL ENTREGA ATUAL -->
+        <div id="painelEntregaAtual" class="card p-4 mb-4 hidden border-2 border-indigo-500/40">
+            <p class="text-xs font-semibold text-indigo-400 uppercase">Próxima entrega:</p>
+            <h2 id="idPacoteAtual" class="text-2xl font-black my-1">-</h2>
+            <p id="enderecoAtual" class="text-base text-slate-200 mb-4">-</p>
+
+            <div class="grid grid-cols-1 gap-3">
+                <button onclick="marcarComoEntregueEIrProximo()" class="bg-emerald-600 p-3 rounded-xl font-bold text-base">
+                    ✅ Marcar como Entregue
+                </button>
+                <button onclick="ignorarEntrega()" class="bg-red-600 p-3 rounded-xl font-bold text-base">
+                    ⏭️ Ignorar Esta
+                </button>
+            </div>
+        </div>
+
+        <!-- LISTA DA ROTA -->
+        <div class="card p-4 mb-4">
+            <h3 class="font-bold text-base mb-3">📋 Ordem da Rota <span id="distanciaTotal" class="text-emerald-400 text-sm ml-2"></span></h3>
+            <div id="listaRotaOtimizada" class="space-y-2">
+                <div class="text-slate-500 text-center py-4">Aguardando cálculo...</div>
+            </div>
+        </div>
+
+        <!-- LISTA ENTREGUES -->
+        <div class="card p-4 mb-4">
+            <h3 class="font-bold text-base mb-3 text-emerald-400">✅ Já Entregues</h3>
+            <div id="listaEntregues" class="space-y-2">
+                <div class="text-slate-500 text-center py-4">Nenhuma ainda</div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- MODAL OCR -->
+<div id="modalScanner" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 rounded-2xl p-4 w-full max-w-sm">
+        <video id="videoCamera" autoplay playsinline class="w-full rounded-xl mb-4"></video>
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="capturarTexto()" class="bg-indigo-600 p-3 rounded-xl font-bold">Capturar</button>
+            <button onclick="fecharScanner()" class="bg-red-600 p-3 rounded-xl font-bold">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<canvas id="telaOculta" class="hidden"></canvas>
+
+<script>
+lucide.createIcons();
+
+let entregasAdicionadas = [];
+let rotaOtimizada = [];
+let entregasConcluidas = [];
+let minhaLat = null;
+let minhaLng = null;
+let fluxoCamera = null;
+
+function salvarTudo(){
+    localStorage.setItem("entregas", JSON.stringify(entregasAdicionadas));
+    localStorage.setItem("rota", JSON.stringify(rotaOtimizada));
+    localStorage.setItem("concluidas", JSON.stringify(entregasConcluidas));
+}
+
+function carregarDados(){
+    const e = localStorage.getItem("entregas");
+    const r = localStorage.getItem("rota");
+    const c = localStorage.getItem("concluidas");
+    if(e) entregasAdicionadas = JSON.parse(e);
+    if(r) rotaOtimizada = JSON.parse(r);
+    if(c) entregasConcluidas = JSON.parse(c);
+    atualizarTelaPendentes();
+    atualizarEstatisticas();
+    atualizarPainelEntrega();
+    atualizarListaEntregues();
+}
+
+function addStop(){
+    const id = document.getElementById("packageIdInput").value.trim();
+    const endereco = document.getElementById("addressInput").value.trim();
+
+    if(!endereco) return alert("⚠️ Digite o endereço!");
+    const idFinal = id || `#PK-${Math.floor(Math.random()*999999)}`;
+
+    entregasAdicionadas.push({
+        idUnico: Date.now().toString(),
+        idPacote: idFinal,
+        endereco: endereco,
+        lat: null,
+        lng: null
+    });
+
+    document.getElementById("packageIdInput").value = "";
+    document.getElementById("addressInput").value = "";
+
+    atualizarTelaPendentes();
+    atualizarEstatisticas();
+    salvarTudo();
+}
+
+function limparCampos(){
+    document.getElementById("packageIdInput").value = "";
+    document.getElementById("addressInput").value = "";
+}
+
+function atualizarTelaPendentes(){
+    const div = document.getElementById("listaPendentes");
+    if(entregasAdicionadas.length === 0){
+        div.innerHTML = `<div class="text-slate-500 text-sm text-center py-3">Nenhuma entrega adicionada ainda</div>`;
+        return;
+    }
+    div.innerHTML = "";
+    entregasAdicionadas.forEach((entrega)=>{
+        const el = document.createElement("div");
+        el.className = "bg-slate-900 p-3 rounded-xl border border-slate-800 flex justify-between items-center";
+        el.innerHTML = `
+            <div class="flex-1 mr-2">
+                <div class="font-bold text-indigo-400 text-sm">${entrega.idPacote}</div>
+                <div class="text-xs text-slate-300">${entrega.endereco.substring(0,30)}...</div>
+            </div>
+            <button onclick="removerEntrega('${entrega.idUnico}')" class="bg-red-700/60 w-8 h-8 rounded-lg flex items-center justify-center text-lg">×</button>
+        `;
+        div.appendChild(el);
+    });
+}
+
+function removerEntrega(id){
+    entregasAdicionadas = entregasAdicionadas.filter(e=>e.idUnico !== id);
+    atualizarTelaPendentes();
+    atualizarEstatisticas();
+    salvarTudo();
+}
+
+function excluirTodosPendentes(){
+    if(entregasAdicionadas.length === 0){
+        alert("ℹ️ Não há endereços para excluir.");
+        return;
+    }
+    if(confirm("⚠️ Tem certeza que deseja excluir TODOS?\nEsta ação não pode ser desfeita!")){
+        entregasAdicionadas = [];
+        atualizarTelaPendentes();
+        atualizarEstatisticas();
+        salvarTudo();
+        alert("✅ Todos removidos.");
+    }
+}
+
+function atualizarEstatisticas(){
+    document.getElementById("contPendentes").innerText = entregasAdicionadas.length;
+    document.getElementById("contEntregues").innerText = entregasConcluidas.length;
+    document.getElementById("contTotal").innerText = entregasAdicionadas.length + entregasConcluidas.length;
+}
+
+function pegarMinhaLocalizacao(){
+    const status = document.getElementById("statusGPS");
+    status.innerText = "⏳ Obtendo localização...";
+    if(!navigator.geolocation){
+        status.innerText = "❌ GPS não suportado";
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(
+        pos=>{
+            minhaLat = pos.coords.latitude;
+            minhaLng = pos.coords.longitude;
+            status.innerHTML = `✅ Lat: ${minhaLat.toFixed(5)} <br> Lng: ${minhaLng.toFixed(5)}`;
+        },
+        erro=>{
+            status.innerText = "❌ Não foi possível obter localização";
+            minhaLat = -21.7595; minhaLng = -43.3424;
+        },
+        {enableHighAccuracy:true, timeout:12000}
     );
-
 }
 
-
-// ==========================
-// LIMPAR TUDO
-// ==========================
-
-function limparTudo(){
-
-    if(
-        !confirm(
-            "Apagar todas as entregas?"
-        )
-    ){
-        return;
-    }
-
-    paradas = [];
-
-    atualizarListaParadas();
-
-    document.getElementById(
-        "resumoRota"
-    ).innerHTML =
-    "0h00min • 0 paradas • 0 km";
-
-    if(controleRota){
-
-        mapa.removeControl(
-            controleRota
-        );
-
-        controleRota = null;
-
-    }
-
-}
-//
-// ==========================
-// CALCULAR ROTA OTIMIZADA
-// USANDO OSRM TRIP API
-// ==========================
-//
-
-async function calcularMelhorRota(){
-
-    if(paradas.length === 0){
-
-        alert("Adicione pelo menos uma parada.");
-
-        return;
-
-    }
-
+async function pegarCoordenadas(endereco){
     try{
-
-        let coordenadas =
-        `${minhaLng},${minhaLat}`;
-
-        paradas.forEach(p => {
-
-            coordenadas +=
-            `;${p.lng},${p.lat}`;
-
-        });
-
-        const resposta =
-        await fetch(
-
-        `https://router.project-osrm.org/trip/v1/driving/${coordenadas}?source=first&roundtrip=false&steps=true&geometries=geojson`
-
-        );
-
-        const dados =
-        await resposta.json();
-
-        if(!dados.waypoints){
-
-            throw new Error(
-                "Erro OSRM"
-            );
-
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}&countrycodes=BR&limit=1`);
+        const dados = await res.json();
+        if(dados.length>0){
+            return {lat:parseFloat(dados[0].lat), lng:parseFloat(dados[0].lon)};
         }
-
-        //
-        // REORDENA AS ENTREGAS
-        //
-
-        let novaRota = [];
-
-        dados.waypoints
-
-        .sort(
-            (a,b)=>
-            a.waypoint_index -
-            b.waypoint_index
-        )
-
-        .forEach(w => {
-
-            if(
-                w.waypoint_index > 0
-            ){
-
-                novaRota.push(
-
-                    paradas[
-                        w.waypoint_index - 1
-                    ]
-
-                );
-
-            }
-
-        });
-
-        paradas = novaRota;
-
-        atualizarListaParadas();
-
-        //
-        // REMOVE ROTA ANTIGA
-        //
-
-        if(controleRota){
-
-            mapa.removeControl(
-                controleRota
-            );
-
-        }
-
-        //
-        // DESENHA NOVA ROTA
-        //
-
-        let waypoints = [
-
-            L.latLng(
-                minhaLat,
-                minhaLng
-            )
-
-        ];
-
-        paradas.forEach(p => {
-
-            waypoints.push(
-
-                L.latLng(
-                    p.lat,
-                    p.lng
-                )
-
-            );
-
-        });
-
-        controleRota =
-        L.Routing.control({
-
-            waypoints,
-
-            addWaypoints:false,
-
-            draggableWaypoints:false,
-
-            routeWhileDragging:false,
-
-            show:false,
-
-            fitSelectedRoutes:true,
-
-            createMarker:
-            function(i,wp){
-
-                if(i===0){
-
-                    return L.marker(
-                        wp.latLng
-                    ).bindPopup(
-                        "Minha localização"
-                    );
-
-                }
-
-                return L.marker(
-                    wp.latLng
-                ).bindPopup(
-
-                    `Parada ${i}`
-
-                );
-
-            }
-
-        }).addTo(mapa);
-
-        //
-        // RESUMO
-        //
-
-        controleRota.on(
-            "routesfound",
-
-            function(e){
-
-                const resumo =
-                e.routes[0].summary;
-
-                const km =
-                (
-                    resumo.totalDistance
-                    /1000
-                ).toFixed(1);
-
-                const tempo =
-                Math.round(
-                    resumo.totalTime
-                    /60
-                );
-
-                document
-                .getElementById(
-                    "resumoRota"
-                )
-                .innerHTML =
-
-                `${Math.floor(
-                    tempo/60
-                )}h${tempo%60}min • ${paradas.length} paradas • ${km} km`;
-
-            }
-
-        );
-
-    }
-
-    catch(erro){
-
-        console.error(
-            erro
-        );
-
-        alert(
-            "Erro ao calcular rota."
-        );
-
-    }
-
+    }catch(e){console.error(e)}
+    return null;
 }
 
-
-
-//
-// ==========================
-// GOOGLE MAPS
-// ==========================
-//
-
-function navegarNoGoogleMaps(){
-
-    if(
-        paradas.length === 0
-    ){
-
-        alert(
-            "Nenhuma entrega pendente."
-        );
-
-        return;
-
-    }
-
-    const destino =
-    paradas[0];
-
-    const url =
-
-    `https://www.google.com/maps/dir/?api=1&origin=${minhaLat},${minhaLng}&destination=${destino.lat},${destino.lng}&travelmode=driving`;
-
-    window.open(
-        url,
-        "_blank"
-    );
-
+function calcularDistanciaKM(lat1, lng1, lat2, lng2){
+    const R = 6371;
+    const dLat = (lat2 - lat1)*Math.PI/180;
+    const dLng = (lng2 - lng1)*Math.PI/180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+function calcularDistanciaTotal(sequencia, pontoInicial){
+    let total = 0;
+    let atual = pontoInicial;
+    for(let parada of sequencia){
+        total += calcularDistanciaKM(atual.lat, atual.lng, parada.lat, parada.lng);
+        atual = parada;
+    }
+    return total;
+}
 
+function permutar(arr){
+    if(arr.length===0) return [];
+    if(arr.length===1) return [arr];
+    let resultado = [];
+    for(let i=0; i<arr.length; i++){
+        const atual = arr[i];
+        const resto = arr.slice(0,i).concat(arr.slice(i+1));
+        const permRest = permutar(resto);
+        for(let p of permRest){
+            resultado.push([atual].concat(p));
+        }
+    }
+    return resultado;
+}
 
-//
-// ==========================
-// ENTREGUE / PRÓXIMA
-// ==========================
-//
+async function iniciarRoteirizacao(){
+    if(entregasAdicionadas.length===0) return alert("⚠️ Adicione entregas primeiro!");
+    if(!minhaLat || !minhaLng) return alert("⚠️ Atualize sua localização primeiro!");
 
-function entregue(){
+    alert("⏳ Calculando melhor rota...");
 
-    if(
-        paradas.length === 0
-    ){
-
-        alert(
-            "Nenhuma entrega."
-        );
-
-        return;
-
+    for(let e of entregasAdicionadas){
+        if(!e.lat || !e.lng){
+            const coord = await pegarCoordenadas(e.endereco);
+            if(coord){ e.lat = coord.lat; e.lng = coord.lng; }
+            else{ e.lat = minhaLat+(Math.random()*0.08-0.04); e.lng=minhaLng+(Math.random()*0.08-0.04); }
+        }
     }
 
-    //
-    // REMOVE ENTREGA
-    // CONCLUÍDA
-    //
+    const lista = [...entregasAdicionadas];
+    const origem = {lat:minhaLat, lng:minhaLng};
 
-    paradas.shift();
+    if(lista.length <= 8){
+        const todasOrdens = permutar(lista);
+        let menorDist = Infinity;
+        let melhorOrdem = lista;
 
-    atualizarListaParadas();
-
-    //
-    // TEM MAIS ENTREGAS?
-    //
-
-    if(
-        paradas.length > 0
-    ){
-
-        calcularMelhorRota();
-
+        for(let ordem of todasOrdens){
+            const dist = calcularDistanciaTotal(ordem, origem);
+            if(dist < menorDist){
+                menorDist = dist;
+                melhorOrdem = ordem;
+            }
+        }
+        rotaOtimizada = melhorOrdem;
+        document.getElementById("distanciaTotal").innerText = `| Total: ${menorDist.toFixed(1)} km`;
     }
-
     else{
+        let atual = origem;
+        let naoVisitadas = [...lista];
+        rotaOtimizada = [];
 
-        document
-        .getElementById(
-            "resumoRota"
-        )
-        .innerHTML =
-        "0h00min • 0 paradas • 0 km";
-
-        if(controleRota){
-
-            mapa.removeControl(
-                controleRota
-            );
-
-            controleRota = null;
-
+        while(naoVisitadas.length>0){
+            let proxIdx = 0;
+            let menor = Infinity;
+            for(let i=0; i<naoVisitadas.length; i++){
+                const d = calcularDistanciaKM(atual.lat, atual.lng, naoVisitadas[i].lat, naoVisitadas[i].lng);
+                if(d < menor){ menor = d; proxIdx = i; }
+            }
+            const p = naoVisitadas.splice(proxIdx,1)[0];
+            rotaOtimizada.push(p);
+            atual = p;
         }
 
-        alert(
-            "Todas as entregas foram concluídas."
-        );
+        let melhorou;
+        do{
+            melhorou = false;
+            for(let i=0; i<rotaOtimizada.length-2; i++){
+                for(let j=i+2; j<rotaOtimizada.length; j++){
+                    const dAntes = calcularDistanciaKM(
+                        i===0 ? origem : rotaOtimizada[i-1], rotaOtimizada[i]
+                    ) + calcularDistanciaKM(rotaOtimizada[j], j===rotaOtimizada.length-1 ? rotaOtimizada[j] : rotaOtimizada[j+1]);
 
+                    const dDepois = calcularDistanciaKM(
+                        i===0 ? origem : rotaOtimizada[i-1], rotaOtimizada[j]
+                    ) + calcularDistanciaKM(rotaOtimizada[i], j===rotaOtimizada.length-1 ? rotaOtimizada[j] : rotaOtimizada[j+1]);
+
+                    if(dDepois < dAntes){
+                        rotaOtimizada = [
+                            ...rotaOtimizada.slice(0,i),
+                            ...rotaOtimizada.slice(i,j+1).reverse(),
+                            ...rotaOtimizada.slice(j+1)
+                        ];
+                        melhorou = true;
+                    }
+                }
+            }
+        }while(melhorou);
+
+        const totalFinal = calcularDistanciaTotal(rotaOtimizada, origem);
+        document.getElementById("distanciaTotal").innerText = `| Total: ${totalFinal.toFixed(1)} km`;
     }
 
+    entregasAdicionadas = [];
+    atualizarTelaPendentes();
+    atualizarListaRota();
+    atualizarPainelEntrega();
+    salvarTudo();
+    alert("✅ Rota pronta!");
 }
 
-</script>
+function atualizarListaRota(){
+    const div = document.getElementById("listaRotaOtimizada");
+    if(rotaOtimizada.length===0){
+        div.innerHTML = `<div class="text-slate-500 text-center py-4">Aguardando cálculo...</div>`;
+        return;
+    }
+    div.innerHTML="";
+    rotaOtimizada.forEach((e,i)=>{
+        const el = document.createElement("div");
+        el.className = `p-3 rounded-xl border flex gap-3 items-center ${i===0 ? "bg-indigo-900/40 border-indigo-500" : "bg-slate-900 border-slate-700"}`;
+        el.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-indigo-600 font-bold flex items-center justify-center text-sm">${i+1}</div>
+            <div class="flex-1">
+                <div class="font-bold text-sm">${e.idPacote}</div>
+                <div class="text-xs text-slate-300">${e.endereco}</div>
+            </div>
+        `;
+        div.appendChild(el);
+    });
+}
 
+function atualizarPainelEntrega(){
+    const painel = document.getElementById("painelEntregaAtual");
+
+    if(rotaOtimizada.length===0){
+        painel.classList.add("hidden");
+        return;
+    }
+    painel.classList.remove("hidden");
+
+    const atual = rotaOtimizada[0];
+    document.getElementById("idPacoteAtual").innerText = atual.idPacote;
+    document.getElementById("enderecoAtual").innerText = atual.endereco;
+
+    atualizarListaRota();
+}
+
+function marcarComoEntregueEIrProximo(){
+    if(rotaOtimizada.length===0) return;
+
+    const concluida = rotaOtimizada.shift();
+    entregasConcluidas.push(concluida);
+
+    atualizarPainelEntrega();
+    atualizarListaEntregues();
+    atualizarEstatisticas();
+    salvarTudo();
+
+    if(rotaOtimizada.length === 0){
+        alert("🏁 Todas as entregas finalizadas!");
+        entregasAdicionadas = [];
+        rotaOtimizada = [];
+        entregasConcluidas = [];
+        localStorage.clear();
+        atualizarTelaPendentes();
+        atualizarListaRota();
+        atualizarListaEntregues();
+        atualizarEstatisticas();
+        atualizarPainelEntrega();
+    }
+}
+
+function ignorarEntrega(){
+    if(rotaOtimizada.length===0) return;
+    rotaOtimizada.shift();
+    atualizarPainelEntrega();
+    salvarTudo();
+}
+
+function atualizarListaEntregues(){
+    const div = document.getElementById("listaEntregues");
+    if(entregasConcluidas.length===0){
+        div.innerHTML = `<div class="text-slate-500 text-center py-4">Nenhuma entrega concluída</div>`;
+        return;
+    }
+    div.innerHTML="";
+    entregasConcluidas.forEach(e=>{
+        const el = document.createElement("div");
+        el.className = "bg-emerald-950/40 p-3 rounded-xl border border-emerald-700/40";
+        el.innerHTML = `<div class="font-bold text-emerald-400 text-sm">${e.idPacote}</div><div class="text-xs">${e.endereco}</div>`;
+        div.appendChild(el);
+    });
+}
+
+function importCSV(){
+    const arquivo = document.getElementById("csvFile").files[0];
+    if(!arquivo) return alert("Escolha um arquivo .csv");
+    const ler = new FileReader();
+    ler.onload = ev=>{
+        ev.target.result.split("\n").forEach(linha=>{
+            const col = linha.split(",");
+            if(col.length>=2 && col[0].trim()){
+                entregasAdicionadas.push({
+                    idUnico: Date.now()+Math.random(),
+                    idPacote: col[0].trim(),
+                    endereco: col[1].trim(),
+                    lat:null, lng:null
+                });
+            }
+        });
+        atualizarTelaPendentes();
+        atualizarEstatisticas();
+        salvarTudo();
+        alert("✅ Importado!");
+    };
+    ler.readAsText(arquivo,"UTF-8");
+}
+
+async function openScanner(){
+    try{
+        fluxoCamera = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+        document.getElementById("modalScanner").classList.remove("hidden");
+        document.getElementById("videoCamera").srcObject = fluxoCamera;
+    }catch(e){alert("❌ Câmera indisponível")}
+}
+function fecharScanner(){
+    if(fluxoCamera) fluxoCamera.getTracks().forEach(t=>t.stop());
+    document.getElementById("modalScanner").classList.add("hidden");
+}
+async function capturarTexto(){
+    const v = document.getElementById("videoCamera");
+    const c = document.getElementById("telaOculta");
+    const ctx = c.getContext("2d");
+    c.width=v.videoWidth; c.height=v.videoHeight;
+    ctx.drawImage(v,0,0);
+    try{
+        const res = await Tesseract.recognize(c,"por");
+        const texto = res.data.text.trim();
+        if(texto.length>6){
+            document.getElementById("addressInput").value = texto;
+            fecharScanner();
+            alert("✅ Endereço capturado!");
+        }else alert("❌ Não foi possível ler");
+    }catch(e){alert("❌ Erro ao processar imagem")}
+}
+
+window.onload = ()=>{
+    pegarMinhaLocalizacao();
+    carregarDados();
+};
+</script>
 </body>
 </html>
